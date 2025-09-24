@@ -210,24 +210,30 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
       
       runningBalance += dayIncome - dayExpenses;
 
-      // Look ahead to next pay date to see if we need to reserve money
-      const nextPayDate = payDates.find(payDate => payDate > date);
+      // Calculate reserve needs for income days only
       let reserveAmount = 0;
       let needsReserve = false;
+      
+      if (dayIncome > 0) { // This is a pay day
+        // Find next pay date after this one
+        const nextPayDate = payDates.find(payDate => payDate > date);
+        
+        if (nextPayDate) {
+          // Calculate all expenses between this pay and next pay
+          const expensesBetweenPays = allEvents
+            .filter(event => 
+              !event.isIncoming && 
+              event.date > date && 
+              event.date <= nextPayDate
+            )
+            .reduce((sum, event) => sum + event.amount, 0);
 
-      if (nextPayDate) {
-        // Calculate expenses between now and next pay
-        const expensesBetween = allEvents
-          .filter(event => 
-            !event.isIncoming && 
-            event.date > date && 
-            event.date <= nextPayDate
-          )
-          .reduce((sum, event) => sum + event.amount, 0);
-
-        if (expensesBetween > 0 && runningBalance - expensesBetween < 100) {
-          needsReserve = true;
-          reserveAmount = expensesBetween + 100 - (runningBalance - dayIncome + dayExpenses);
+          // If expenses would leave us with less than £100 buffer, suggest reserve
+          const balanceAfterExpenses = runningBalance - expensesBetweenPays;
+          if (expensesBetweenPays > 0 && balanceAfterExpenses < 100) {
+            needsReserve = true;
+            reserveAmount = Math.max(0, expensesBetweenPays + 100 - (runningBalance - dayIncome));
+          }
         }
       }
 
