@@ -13,6 +13,8 @@ interface CalendarEvent {
   amount: number;
   category?: string;
   isIncoming: boolean;
+  isPaid?: boolean;
+  billId?: string;
 }
 
 interface DayAnalysis {
@@ -80,6 +82,9 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
     const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
     const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
     const trackingStartDate = budgetData.trackingStartDate ? new Date(budgetData.trackingStartDate) : new Date('1900-01-01');
+    
+    // Get bill payment status from Bill Tracker
+    const billPayments = budgetData.billPayments || {};
 
     // Fixed monthly expenses (assume due on various days)
     budgetData.expenses.fixed.forEach((expense: any, index: number) => {
@@ -89,13 +94,20 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
       // Skip if before tracking start date
       if (dueDate < trackingStartDate) return;
       
+      const billId = `fixed-${expense.id}`;
+      const monthKey = `${dueDate.getFullYear()}-${(dueDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      const monthPayments = billPayments[monthKey] || [];
+      const paymentStatus = monthPayments.find((p: any) => p.billId === billId);
+      
       billDates.push({
         date: dueDate,
         type: 'bill',
         name: expense.name,
         amount: expense.amount,
         category: 'fixed',
-        isIncoming: false
+        isIncoming: false,
+        isPaid: paymentStatus?.isPaid || false,
+        billId
       });
     });
 
@@ -107,13 +119,20 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
       // Skip if before tracking start date
       if (dueDate < trackingStartDate) return;
       
+      const billId = `variable-${expense.id}`;
+      const monthKey = `${dueDate.getFullYear()}-${(dueDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      const monthPayments = billPayments[monthKey] || [];
+      const paymentStatus = monthPayments.find((p: any) => p.billId === billId);
+      
       billDates.push({
         date: dueDate,
         type: 'bill',
         name: expense.name,
         amount: expense.amount,
         category: 'variable',
-        isIncoming: false
+        isIncoming: false,
+        isPaid: paymentStatus?.isPaid || false,
+        billId
       });
     });
 
@@ -130,13 +149,20 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
             continue;
           }
           
+          const billId = `28day-${expense.id}-${currentDue.toISOString().split('T')[0]}`;
+          const monthKey = `${currentDue.getFullYear()}-${(currentDue.getMonth() + 1).toString().padStart(2, '0')}`;
+          const monthPayments = billPayments[monthKey] || [];
+          const paymentStatus = monthPayments.find((p: any) => p.billId === billId);
+          
           billDates.push({
             date: new Date(currentDue),
             type: 'bill',
             name: `${expense.name} (28-day)`,
             amount: expense.amount,
             category: 'twentyEightDay',
-            isIncoming: false
+            isIncoming: false,
+            isPaid: paymentStatus?.isPaid || false,
+            billId
           });
         }
         currentDue.setDate(currentDue.getDate() + 28);
@@ -150,13 +176,20 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
       // Skip if before tracking start date
       if (dueDate < trackingStartDate) return;
       
+      const billId = `debt-${debt.id}`;
+      const monthKey = `${dueDate.getFullYear()}-${(dueDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      const monthPayments = billPayments[monthKey] || [];
+      const paymentStatus = monthPayments.find((p: any) => p.billId === billId);
+      
       billDates.push({
         date: dueDate,
         type: 'debt',
         name: `${debt.name} Payment`,
         amount: debt.minimumPayment,
         category: 'debt',
-        isIncoming: false
+        isIncoming: false,
+        isPaid: paymentStatus?.isPaid || false,
+        billId
       });
     });
 
@@ -223,6 +256,7 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
           const expensesBetweenPays = allEvents
             .filter(event => 
               !event.isIncoming && 
+              !event.isPaid &&
               event.date > date && 
               event.date <= nextPayDate
             )
@@ -424,9 +458,12 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
                       <div key={i} className="flex items-center justify-between text-sm">
                         <div className="flex items-center space-x-2">
                           {getEventIcon(event.type)}
-                          <span>{event.name}</span>
+                          <span className={event.isPaid ? 'line-through text-slate-500' : ''}>
+                            {event.name}
+                            {event.isPaid && <span className="ml-2 text-green-600 text-xs">(Paid)</span>}
+                          </span>
                         </div>
-                        <span className="font-semibold text-red-600">
+                        <span className={`font-semibold ${event.isPaid ? 'text-slate-500 line-through' : 'text-red-600'}`}>
                           -{formatCurrency(event.amount)}
                         </span>
                       </div>
