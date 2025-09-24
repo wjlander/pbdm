@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DollarSign, TrendingUp, CreditCard, PieChart, Calculator, Target, Calendar, Menu, X, Car, Heart, Camera, Bell, User, CheckCircle } from 'lucide-react';
 import SupabaseLoginForm from './components/SupabaseLoginForm';
-import UserProfile from './components/UserProfile';
+import SupabaseUserProfile from './components/SupabaseUserProfile';
 import IncomeTracker from './components/IncomeTracker';
 import ExpenseManager from './components/ExpenseManager';
 import DebtManager from './components/DebtManager';
@@ -168,7 +168,7 @@ function App() {
         return (
           <div className="space-y-6">
             <DatabaseStatus user={user} />
-            <UserProfile currentUser={currentUser!} onLogout={signOut} onUpdateProfile={handleProfileUpdate} />
+            <SupabaseUserProfile />
           </div>
         );
       default:
