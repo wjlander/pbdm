@@ -30,7 +30,8 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
     { id: 'fixed', name: 'Fixed Monthly', description: 'Rent, insurance, subscriptions' },
     { id: 'variable', name: 'Variable Monthly', description: 'Utilities, groceries' },
     { id: 'discretionary', name: 'Discretionary', description: 'Entertainment, dining out' },
-    { id: 'twentyEightDay', name: '28-Day Cycle', description: 'Bills that repeat every 28 days' }
+    { id: 'twentyEightDay', name: '28-Day Cycle', description: 'Bills that repeat every 28 days' },
+    { id: 'oneOff', name: 'One-Off Expenses', description: 'Scheduled future expenses' }
   ];
 
   const addExpense = () => {
@@ -51,6 +52,9 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
       ...(activeCategory === 'variable' && {
         dueDayOfMonth: newExpense.dueDayOfMonth || 1
       })
+      ...(activeCategory === 'oneOff' && newExpense.dueDate && {
+        dueDate: newExpense.dueDate
+      })
     };
 
     const categoryKey = activeCategory === 'twentyEightDay' ? 'twentyEightDay' : activeCategory;
@@ -59,7 +63,7 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
       ...budgetData,
       expenses: {
         ...budgetData.expenses,
-        [categoryKey]: [...budgetData.expenses[categoryKey], expense]
+        [categoryKey]: [...(budgetData.expenses[categoryKey] || []), expense]
       }
     });
 
@@ -111,6 +115,9 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
     if (categoryKey === 'twentyEightDay') {
       // Convert 28-day cycle to monthly equivalent
       return expenses.reduce((sum: number, exp: Expense) => sum + (exp.amount * 13) / 12, 0);
+    } else if (categoryKey === 'oneOff') {
+      // One-off expenses don't contribute to monthly totals
+      return 0;
     }
     return expenses.reduce((sum: number, exp: Expense) => sum + exp.amount, 0);
   };
@@ -203,10 +210,10 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
               </div>
             )}
             
-            {activeCategory === 'twentyEightDay' && (
+            {(activeCategory === 'twentyEightDay' || activeCategory === 'oneOff') && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Next Due Date
+                  {activeCategory === 'oneOff' ? 'Expense Date' : 'Next Due Date'}
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -260,6 +267,11 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
                   {expense.nextDueDate && activeCategory === 'twentyEightDay' && (
                     <p className="text-sm text-slate-600">
                       Next due: {new Date(expense.nextDueDate).toLocaleDateString()}
+                    </p>
+                  )}
+                  {expense.dueDate && activeCategory === 'oneOff' && (
+                    <p className="text-sm text-slate-600">
+                      Scheduled: {new Date(expense.dueDate).toLocaleDateString()}
                     </p>
                   )}
                 </div>
@@ -323,6 +335,65 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
         </div>
       )}
     </div>
+      {activeCategory === 'oneOff' && getCurrentCategoryExpenses().length > 0 && (
+        <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+          <h3 className="text-lg font-semibold text-slate-800 mb-6">Upcoming One-Off Expenses</h3>
+          
+          <div className="space-y-3">
+            {getCurrentCategoryExpenses()
+              .filter((expense: Expense) => expense.dueDate && new Date(expense.dueDate) >= new Date())
+              .sort((a: Expense, b: Expense) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
+              .map((expense: Expense) => {
+                const daysUntil = Math.ceil((new Date(expense.dueDate!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                
+                return (
+                  <div
+                    key={expense.id}
+                    className={`p-4 rounded-lg border-2 ${
+                      daysUntil <= 7 ? 'border-orange-200 bg-orange-50' : 'border-blue-200 bg-blue-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold text-slate-800">{expense.name}</h4>
+                        <p className="text-sm text-slate-600">
+                          {new Date(expense.dueDate!).toLocaleDateString('en-GB', { 
+                            weekday: 'long', 
+                            day: 'numeric', 
+                            month: 'long', 
+                            year: 'numeric' 
+                          })}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {daysUntil === 0 ? 'Today' : 
+                           daysUntil === 1 ? 'Tomorrow' : 
+                           `In ${daysUntil} days`}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-slate-800">
+                          {formatCurrency(expense.amount)}
+                        </div>
+                        {daysUntil <= 7 && (
+                          <div className="text-xs text-orange-600 font-medium">
+                            Due Soon
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+          
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Note:</strong> One-off expenses don't count toward your monthly budget totals. 
+              They're tracked separately to help you plan for upcoming costs.
+            </p>
+          </div>
+        </div>
+      )}
   );
 };
 
