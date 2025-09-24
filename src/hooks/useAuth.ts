@@ -146,10 +146,16 @@ export const useAuth = () => {
     return null;
   };
 
+  const logout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('current_user');
+  };
+
   return {
     currentUser,
     isLoading,
     login,
+    logout,
     logout,
     updateProfile,
     getPartnerUser
