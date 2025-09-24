@@ -51,14 +51,15 @@ export const useSupabaseBudgetData = (user: User | null) => {
         .from('budget_data')
         .select('*')
         .eq('user_id', user.id)
-        .single()
+        .order('updated_at', { ascending: false })
+        .limit(1)
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
         throw error
       }
 
-      if (data) {
-        setBudgetDataState({ ...defaultBudgetData, ...data.data })
+      if (data && data.length > 0) {
+        setBudgetDataState({ ...defaultBudgetData, ...data[0].data })
       } else {
         // Create initial budget data for new user
         await saveBudgetData(defaultBudgetData)
