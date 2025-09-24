@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { DollarSign, TrendingUp, CreditCard, PieChart, Calculator, Target, Calendar, Menu, X, Car, Heart, Camera, Bell } from 'lucide-react';
+import { DollarSign, TrendingUp, CreditCard, PieChart, Calculator, Target, Calendar, Menu, X, Car, Heart, Camera, Bell, User } from 'lucide-react';
+import LoginForm from './components/LoginForm';
+import UserProfile from './components/UserProfile';
 import IncomeTracker from './components/IncomeTracker';
 import ExpenseManager from './components/ExpenseManager';
 import DebtManager from './components/DebtManager';
@@ -16,15 +18,19 @@ import MobileNavigation from './components/MobileNavigation';
 import QuickActions from './components/QuickActions';
 import LoadingSpinner from './components/LoadingSpinner';
 import useLocalStorage from './hooks/useLocalStorage';
+import { useAuth } from './hooks/useAuth';
 
 function App() {
+  const { currentUser, isLoading: authLoading, login, logout, updateProfile, getPartnerUser } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   const [showOnboarding, setShowOnboarding] = useLocalStorage('showOnboarding', true);
   
-  const [budgetData, setBudgetData] = useLocalStorage('budgetData', {
+  // Use user-specific storage keys
+  const storageKey = currentUser ? `budgetData_${currentUser.id}` : 'budgetData';
+  const [budgetData, setBudgetData] = useLocalStorage(storageKey, {
     income: {
       biweeklyGross: 0,
       taxRate: 0.25,
@@ -47,8 +53,6 @@ function App() {
     partner: null
   });
 
-  const [savingsGoals, setSavingsGoals] = useLocalStorage('savingsGoals', []);
-
   const handleDataUpdate = (newData: any) => {
     setIsLoading(true);
     setTimeout(() => {
@@ -60,6 +64,28 @@ function App() {
   const completeOnboarding = () => {
     setShowOnboarding(false);
   };
+
+  const handleProfileUpdate = (updates: any) => {
+    try {
+      updateProfile(updates);
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
+  }
+
+  // Show login form if not authenticated
+  if (!currentUser) {
+    return <LoginForm onLogin={login} />;
+  }
 
   if (showOnboarding) {
     return (
@@ -88,7 +114,8 @@ function App() {
     { id: 'vehicles', name: 'Vehicles', icon: Car },
     { id: 'debts', name: 'Debts', icon: CreditCard },
     { id: 'goals', name: 'Goals', icon: Target },
-    { id: 'analysis', name: 'Analysis', icon: Calculator }
+    { id: 'analysis', name: 'Analysis', icon: Calculator },
+    { id: 'profile', name: 'Profile', icon: User }
   ];
 
   const renderTabContent = () => {
@@ -111,6 +138,8 @@ function App() {
         return <SavingsGoals budgetData={budgetData} setBudgetData={handleDataUpdate} />;
       case 'analysis':
         return <BudgetAnalysis budgetData={budgetData} />;
+      case 'profile':
+        return <UserProfile currentUser={currentUser} onLogout={logout} onUpdateProfile={handleProfileUpdate} />;
       default:
         return <Dashboard budgetData={budgetData} setBudgetData={handleDataUpdate} />;
     }
@@ -143,7 +172,7 @@ function App() {
               </div>
               <div>
                 <h1 className="text-xl md:text-2xl font-bold text-slate-800">Personal Finance Manager</h1>
-                <p className="text-xs text-slate-500 hidden sm:block">Track • Plan • Achieve</p>
+                <p className="text-xs text-slate-500 hidden sm:block">Welcome, {currentUser.displayName}</p>
               </div>
             </div>
             
@@ -156,6 +185,18 @@ function App() {
                 title="Scan Receipt"
               >
                 <Camera className="h-6 w-6" />
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`p-2 rounded-lg transition-colors hidden md:block ${
+                  activeTab === 'profile' 
+                    ? 'text-blue-600 bg-blue-50' 
+                    : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
+                }`}
+                title="User Profile"
+              >
+                <User className="h-6 w-6" />
               </button>
               
               <button

@@ -1,5 +1,5 @@
 import React from 'react';
-import { PieChart, Calendar, DollarSign, TrendingUp, CreditCard, Calculator, Car, Heart, Target } from 'lucide-react';
+import { PieChart, Calendar, DollarSign, TrendingUp, CreditCard, Calculator, Car, Heart, Target, User } from 'lucide-react';
 
 interface MobileNavigationProps {
   activeTab: string;
@@ -16,7 +16,8 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({ activeTab, setActiv
     { id: 'vehicles', name: 'Vehicles', icon: Car },
     { id: 'debts', name: 'Debts', icon: CreditCard },
     { id: 'goals', name: 'Goals', icon: Target },
-    { id: 'analysis', name: 'Analysis', icon: Calculator }
+    { id: 'analysis', name: 'Analysis', icon: Calculator },
+    { id: 'profile', name: 'Profile', icon: User }
   ];
 
   return (
