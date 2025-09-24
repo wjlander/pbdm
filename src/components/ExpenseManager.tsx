@@ -167,12 +167,12 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
                 Amount
               </label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 font-medium">£</span>
                 <input
                   type="number"
                   value={newExpense.amount || ''}
                   onChange={(e) => setNewExpense({ ...newExpense, amount: Number(e.target.value) })}
-                  className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="0.00"
                 />
               </div>

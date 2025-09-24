@@ -64,7 +64,7 @@ const IncomeTracker: React.FC<IncomeTrackerProps> = ({ budgetData, setBudgetData
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
         <div className="flex items-center space-x-3 mb-6">
-          <DollarSign className="h-6 w-6 text-green-600" />
+          <span className="h-6 w-6 text-green-600 font-bold text-xl flex items-center justify-center">£</span>
           <h2 className="text-xl font-semibold text-slate-800">Income Configuration</h2>
         </div>
 

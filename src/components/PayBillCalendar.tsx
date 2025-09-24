@@ -314,7 +314,7 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
 
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-2">
-              <DollarSign className="h-5 w-5 text-slate-600" />
+              <span className="h-5 w-5 text-slate-600 font-bold flex items-center justify-center">£</span>
               <span className="font-medium text-slate-800">Month End Balance</span>
             </div>
             <div className="text-sm text-slate-700">

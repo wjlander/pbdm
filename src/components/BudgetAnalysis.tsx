@@ -338,7 +338,7 @@ const BudgetAnalysis: React.FC<BudgetAnalysisProps> = ({ budgetData }) => {
             {expenses.discretionary > monthlyIncome * 0.15 && (
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <div className="flex items-start space-x-3">
-                  <DollarSign className="h-5 w-5 text-yellow-600 mt-0.5" />
+                  <span className="h-5 w-5 text-yellow-600 mt-0.5 font-bold flex items-center justify-center">£</span>
                   <div>
                     <h5 className="font-semibold text-yellow-800">Review Discretionary Spending</h5>
                     <p className="text-sm text-yellow-700 mt-1">
