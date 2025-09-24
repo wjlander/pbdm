@@ -71,22 +71,17 @@ const CloudBackup: React.FC<CloudBackupProps> = ({ currentUser }) => {
     setOneDriveStatus(prev => ({ ...prev, syncInProgress: true, error: null }));
     
     try {
-      // Simulate OAuth flow (in production, implement actual Microsoft Graph API)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulate successful connection
-      const newStatus = {
-        isConnected: true,
-        lastSync: null,
+      // DEMO MODE: This is a simulation of OneDrive integration
+      // In production, this would redirect to Microsoft OAuth
+      setOneDriveStatus(prev => ({
+        ...prev,
         syncInProgress: false,
-        error: null
-      };
+        error: 'OneDrive integration is currently in demo mode. Real integration requires Microsoft Graph API setup.'
+      }));
+      return;
       
-      setOneDriveStatus(newStatus);
-      localStorage.setItem(`onedrive_sync_${currentUser.id}`, JSON.stringify(newStatus));
-      
-      // Perform initial sync
-      await syncToOneDrive();
+      // Real implementation would look like:
+      // window.location.href = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&scope=Files.ReadWrite.All`;
     } catch (error) {
       setOneDriveStatus(prev => ({
         ...prev,
@@ -100,7 +95,13 @@ const CloudBackup: React.FC<CloudBackupProps> = ({ currentUser }) => {
     setGoogleDriveStatus(prev => ({ ...prev, syncInProgress: true, error: null }));
     
     try {
-      // Simulate OAuth flow (in production, implement actual Google Drive API)
+      // DEMO MODE: This is a simulation of Google Drive integration
+      setGoogleDriveStatus(prev => ({
+        ...prev,
+        syncInProgress: false,
+        error: 'Google Drive integration is currently in demo mode. Real integration requires Google Drive API setup.'
+      }));
+      return;
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Simulate successful connection
@@ -479,12 +480,12 @@ const CloudBackup: React.FC<CloudBackupProps> = ({ currentUser }) => {
         <div className="flex items-start space-x-2">
           <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5" />
           <div className="text-sm text-blue-800">
-            <p className="font-medium mb-1">Security & Privacy</p>
+            <p className="font-medium mb-1">Demo Mode Notice</p>
             <ul className="space-y-1 text-xs">
-              <li>• All data is encrypted before upload to cloud storage</li>
-              <li>• Only you have access to your financial data</li>
-              <li>• Backups are stored in your personal cloud accounts</li>
-              <li>• No data is shared with third parties</li>
+              <li>• Cloud backup is currently in demonstration mode</li>
+              <li>• Real integration requires API keys and OAuth setup</li>
+              <li>• Use the Export/Import feature for actual backups</li>
+              <li>• Supabase provides automatic cloud storage for your data</li>
             </ul>
           </div>
         </div>
