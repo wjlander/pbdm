@@ -12,6 +12,7 @@ import VehicleManager from './components/VehicleManager';
 import SavingsGoals from './components/SavingsGoals';
 import CouplesDashboard from './components/CouplesDashboard';
 import NotificationCenter from './components/NotificationCenter';
+import BillTracker from './components/BillTracker';
 import ReceiptScanner from './components/ReceiptScanner';
 import OnboardingWizard from './components/OnboardingWizard';
 import MobileNavigation from './components/MobileNavigation';
@@ -19,6 +20,7 @@ import QuickActions from './components/QuickActions';
 import LoadingSpinner from './components/LoadingSpinner';
 import CloudBackup from './components/CloudBackup';
 import SecurityAudit from './components/SecurityAudit';
+import DatabaseStatus from './components/DatabaseStatus';
 import useLocalStorage from './hooks/useLocalStorage';
 import { useAuth } from './hooks/useAuth';
 
@@ -116,6 +118,7 @@ function App() {
     { id: 'vehicles', name: 'Vehicles', icon: Car },
     { id: 'debts', name: 'Debts', icon: CreditCard },
     { id: 'goals', name: 'Goals', icon: Target },
+    { id: 'bills', name: 'Bill Tracker', icon: CheckCircle },
     { id: 'analysis', name: 'Analysis', icon: Calculator },
     { id: 'backup', name: 'Backup', icon: Bell },
     { id: 'security', name: 'Security', icon: Bell },
@@ -140,6 +143,8 @@ function App() {
         return <DebtManager budgetData={budgetData} setBudgetData={handleDataUpdate} />;
       case 'goals':
         return <SavingsGoals budgetData={budgetData} setBudgetData={handleDataUpdate} />;
+      case 'bills':
+        return <BillTracker budgetData={budgetData} setBudgetData={handleDataUpdate} />;
       case 'analysis':
         return <BudgetAnalysis budgetData={budgetData} />;
       case 'backup':
@@ -147,7 +152,12 @@ function App() {
       case 'security':
         return <SecurityAudit currentUser={currentUser} />;
       case 'profile':
-        return <UserProfile currentUser={currentUser} onLogout={logout} onUpdateProfile={handleProfileUpdate} />;
+        return (
+          <div className="space-y-6">
+            <DatabaseStatus user={currentUser} />
+            <UserProfile currentUser={currentUser} onLogout={logout} onUpdateProfile={handleProfileUpdate} />
+          </div>
+        );
       default:
         return <Dashboard budgetData={budgetData} setBudgetData={handleDataUpdate} />;
     }
