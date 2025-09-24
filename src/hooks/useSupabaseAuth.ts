@@ -28,7 +28,7 @@ export const useSupabaseAuth = () => {
   }, [])
 
   const signUp = async (email: string, password: string, displayName: string) => {
-    const { data, error } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -38,22 +38,22 @@ export const useSupabaseAuth = () => {
       },
     })
 
-    if (error) throw error
+    if (authError) throw authError
 
     // Create user profile
-    if (data.user) {
+    if (authData.user) {
       const { error: profileError } = await supabase
         .from('user_profiles')
         .insert({
-          id: data.user.id,
-          email: data.user.email!,
+          id: authData.user.id,
+          email: authData.user.email!,
           display_name: displayName,
         })
 
       if (profileError) throw profileError
     }
 
-    return data
+    return authData
   }
 
   const signIn = async (email: string, password: string) => {
