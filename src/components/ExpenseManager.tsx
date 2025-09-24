@@ -12,6 +12,7 @@ interface Expense {
   amount: number;
   category: string;
   dueDate?: string;
+  dueDayOfMonth?: number;
   nextDueDate?: string;
 }
 
@@ -21,7 +22,8 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
     name: '',
     amount: 0,
     category: activeCategory,
-    dueDate: ''
+    dueDate: '',
+    dueDayOfMonth: 1
   });
 
   const categories = [
@@ -42,6 +44,12 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
       ...(activeCategory === 'twentyEightDay' && newExpense.dueDate && {
         dueDate: newExpense.dueDate,
         nextDueDate: calculateNext28DayDate(newExpense.dueDate)
+      }),
+      ...(activeCategory === 'fixed' && {
+        dueDayOfMonth: newExpense.dueDayOfMonth || 1
+      }),
+      ...(activeCategory === 'variable' && {
+        dueDayOfMonth: newExpense.dueDayOfMonth || 1
       })
     };
 
@@ -55,7 +63,7 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
       }
     });
 
-    setNewExpense({ name: '', amount: 0, category: activeCategory, dueDate: '' });
+    setNewExpense({ name: '', amount: 0, category: activeCategory, dueDate: '', dueDayOfMonth: 1 });
   };
 
   const removeExpense = (categoryKey: string, expenseId: string) => {
@@ -178,6 +186,23 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
               </div>
             </div>
             
+            {(activeCategory === 'fixed' || activeCategory === 'variable') && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Due Day of Month
+                </label>
+                <select
+                  value={newExpense.dueDayOfMonth || 1}
+                  onChange={(e) => setNewExpense({ ...newExpense, dueDayOfMonth: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                    <option key={day} value={day}>{day}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
             {activeCategory === 'twentyEightDay' && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -227,7 +252,12 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
               >
                 <div className="flex-1">
                   <h4 className="font-semibold text-slate-800">{expense.name}</h4>
-                  {expense.nextDueDate && (
+                  {expense.dueDayOfMonth && (activeCategory === 'fixed' || activeCategory === 'variable') && (
+                    <p className="text-sm text-slate-600">
+                      Due: {expense.dueDayOfMonth}{expense.dueDayOfMonth === 1 ? 'st' : expense.dueDayOfMonth === 2 ? 'nd' : expense.dueDayOfMonth === 3 ? 'rd' : 'th'} of each month
+                    </p>
+                  )}
+                  {expense.nextDueDate && activeCategory === 'twentyEightDay' && (
                     <p className="text-sm text-slate-600">
                       Next due: {new Date(expense.nextDueDate).toLocaleDateString()}
                     </p>

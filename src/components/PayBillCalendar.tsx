@@ -61,11 +61,15 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
     const billDates: CalendarEvent[] = [];
     const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
     const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    const trackingStartDate = budgetData.trackingStartDate ? new Date(budgetData.trackingStartDate) : new Date('1900-01-01');
 
     // Fixed monthly expenses (assume due on various days)
     budgetData.expenses.fixed.forEach((expense: any, index: number) => {
-      const dueDay = ((index * 7) % 28) + 1; // Spread bills across the month
+      const dueDay = expense.dueDayOfMonth || ((index * 7) % 28) + 1; // Use specified day or spread bills across the month
       const dueDate = new Date(month.getFullYear(), month.getMonth(), Math.min(dueDay, monthEnd.getDate()));
+      
+      // Skip if before tracking start date
+      if (dueDate < trackingStartDate) return;
       
       billDates.push({
         date: dueDate,
@@ -79,8 +83,11 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
 
     // Variable monthly expenses
     budgetData.expenses.variable.forEach((expense: any, index: number) => {
-      const dueDay = ((index * 5) % 28) + 3; // Different spread pattern
+      const dueDay = expense.dueDayOfMonth || ((index * 5) % 28) + 3; // Use specified day or different spread pattern
       const dueDate = new Date(month.getFullYear(), month.getMonth(), Math.min(dueDay, monthEnd.getDate()));
+      
+      // Skip if before tracking start date
+      if (dueDate < trackingStartDate) return;
       
       billDates.push({
         date: dueDate,
@@ -99,6 +106,12 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
       let currentDue = new Date(expense.dueDate);
       while (currentDue <= new Date(monthEnd.getTime() + 28 * 24 * 60 * 60 * 1000)) {
         if (currentDue >= monthStart && currentDue <= monthEnd) {
+          // Skip if before tracking start date
+          if (currentDue < trackingStartDate) {
+            currentDue.setDate(currentDue.getDate() + 28);
+            continue;
+          }
+          
           billDates.push({
             date: new Date(currentDue),
             type: 'bill',
@@ -115,6 +128,9 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
     // Debt payments (assume mid-month)
     budgetData.debts.forEach((debt: any) => {
       const dueDate = new Date(month.getFullYear(), month.getMonth(), Math.min(debt.paymentDate || 15, monthEnd.getDate()));
+      
+      // Skip if before tracking start date
+      if (dueDate < trackingStartDate) return;
       
       billDates.push({
         date: dueDate,
