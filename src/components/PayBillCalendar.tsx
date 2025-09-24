@@ -23,6 +23,8 @@ interface DayAnalysis {
   events: CalendarEvent[];
   needsReserve: boolean;
   reserveAmount: number;
+  reserveType: 'reserve' | 'save';
+  reserveMessage: string;
   status: 'good' | 'caution' | 'critical';
 }
 
@@ -288,40 +290,54 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
       // Calculate reserve needs for income days only
       let reserveAmount = 0;
       let needsReserve = false;
+     let reserveType: 'reserve' | 'save' = 'reserve';
+     let reserveMessage = '';
       
       if (dayIncome > 0) { // This is a pay day
-        // Find next pay date after this one
-        const nextPayDate = allEvents
+        // Find next 2 pay dates after this one
+        const futurePayDates = allEvents
           .filter(event => event.isIncoming && event.date > date)
-          .sort((a, b) => a.date.getTime() - b.date.getTime())[0]?.date;
+          .sort((a, b) => a.date.getTime() - b.date.getTime())
+          .slice(0, 2)
+          .map(event => event.date);
         
-        if (nextPayDate) {
-          // Calculate all unpaid expenses between this pay and next pay
+        if (futurePayDates.length >= 2) {
+          const secondPayDate = futurePayDates[1];
+          
+          // Calculate all unpaid expenses between this pay and the second future pay
           const unpaidExpensesBetweenPays = allEvents
             .filter(event => 
               !event.isIncoming && 
               !event.isPaid &&
               event.date > date && 
-              event.date <= nextPayDate
+              event.date <= secondPayDate
             )
             .reduce((sum, event) => sum + event.amount, 0);
 
-          // Calculate income between this pay and next pay (should be 0 for next payday calculation)
-          const incomeBeforeNextPay = allEvents
+          // Calculate income between this pay and the second future pay (should include the first future pay)
+          const incomeBeforeSecondPay = allEvents
             .filter(event => 
               event.isIncoming && 
               event.date > date && 
-              event.date < nextPayDate
+              event.date < secondPayDate
             )
             .reduce((sum, event) => sum + event.amount, 0);
 
-          // Calculate what balance will be just before next payday
-          const balanceBeforeNextPay = runningBalance - unpaidExpensesBetweenPays + incomeBeforeNextPay;
+          // Calculate what balance will be just before the second payday
+          const balanceBeforeSecondPay = runningBalance - unpaidExpensesBetweenPays + incomeBeforeSecondPay;
           
-          // If balance before next payday would be less than £100, suggest reserve
-          if (unpaidExpensesBetweenPays > 0 && balanceBeforeNextPay < 100) {
+          // If balance before second payday would be less than £100, suggest reserve
+          if (balanceBeforeSecondPay < 100) {
             needsReserve = true;
-            reserveAmount = Math.max(0, 100 - balanceBeforeNextPay);
+            reserveType = 'reserve';
+            reserveAmount = Math.max(0, 100 - balanceBeforeSecondPay);
+            reserveMessage = `Set aside £${reserveAmount.toFixed(2)} to ensure you have at least £100 buffer before your payday on ${secondPayDate.toLocaleDateString('en-GB')}`;
+          } else if (balanceBeforeSecondPay > 500) {
+            // If there's a surplus over £500, suggest saving it
+            needsReserve = true;
+            reserveType = 'save';
+            reserveAmount = Math.max(0, balanceBeforeSecondPay - 200); // Keep £200 buffer, save the rest
+            reserveMessage = `Consider saving £${reserveAmount.toFixed(2)} as you'll have a surplus of £${balanceBeforeSecondPay.toFixed(2)} before your next payday`;
           }
         }
       }
@@ -336,6 +352,8 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
         events,
         needsReserve,
         reserveAmount: Math.max(0, reserveAmount),
+        reserveType,
+        reserveMessage,
         status
       });
     }
@@ -483,11 +501,15 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
                 </div>
                 
                 {day.needsReserve && (
-                  <div className="bg-yellow-100 border border-yellow-300 rounded-lg px-3 py-1">
+                  <div className={`${day.reserveType === 'save' ? 'bg-green-100 border-green-300' : 'bg-yellow-100 border-yellow-300'} rounded-lg px-3 py-1`}>
                     <div className="flex items-center space-x-2">
-                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                      <span className="text-sm font-medium text-yellow-800">
-                        Reserve {formatCurrency(day.reserveAmount)}
+                      {day.reserveType === 'save' ? (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      )}
+                      <span className={`text-sm font-medium ${day.reserveType === 'save' ? 'text-green-800' : 'text-yellow-800'}`}>
+                        {day.reserveType === 'save' ? 'Save' : 'Reserve'} {formatCurrency(day.reserveAmount)}
                       </span>
                     </div>
                   </div>
@@ -534,9 +556,9 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
               </div>
 
               {day.needsReserve && (
-                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Reserve Recommendation:</strong> Set aside {formatCurrency(day.reserveAmount)} from today's pay to ensure you have at least £100 buffer before your next payday.
+                <div className={`mt-3 p-3 ${day.reserveType === 'save' ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} rounded-lg`}>
+                  <p className={`text-sm ${day.reserveType === 'save' ? 'text-green-800' : 'text-yellow-800'}`}>
+                    <strong>{day.reserveType === 'save' ? 'Savings Opportunity:' : 'Reserve Recommendation:'}</strong> {day.reserveMessage}
                   </p>
                 </div>
               )}
