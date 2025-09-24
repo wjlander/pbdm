@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { DollarSign, TrendingUp, CreditCard, PieChart, Calculator, Target } from 'lucide-react';
+import { DollarSign, TrendingUp, CreditCard, PieChart, Calculator, Target, Calendar } from 'lucide-react';
 import IncomeTracker from './components/IncomeTracker';
 import ExpenseManager from './components/ExpenseManager';
 import DebtManager from './components/DebtManager';
 import BudgetAnalysis from './components/BudgetAnalysis';
 import Dashboard from './components/Dashboard';
+import PayBillCalendar from './components/PayBillCalendar';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -30,6 +31,7 @@ function App() {
 
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: PieChart },
+    { id: 'calendar', name: 'Pay Calendar', icon: Calendar },
     { id: 'income', name: 'Income', icon: DollarSign },
     { id: 'expenses', name: 'Expenses', icon: TrendingUp },
     { id: 'debts', name: 'Debts', icon: CreditCard },
@@ -40,6 +42,8 @@ function App() {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard budgetData={budgetData} />;
+      case 'calendar':
+        return <PayBillCalendar budgetData={budgetData} />;
       case 'income':
         return <IncomeTracker budgetData={budgetData} setBudgetData={setBudgetData} />;
       case 'expenses':
