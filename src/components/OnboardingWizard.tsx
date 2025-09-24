@@ -10,8 +10,7 @@ interface OnboardingWizardProps {
 const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ budgetData, setBudgetData, onComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
-    biweeklyGross: '',
-    taxRate: '25',
+    biweeklyNet: '',
     nextPayDate: new Date().toISOString().split('T')[0],
     emergencyTarget: '',
     primaryGoal: ''
@@ -53,8 +52,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ budgetData, setBudg
       setBudgetData({
         ...budgetData,
         income: {
-          biweeklyGross: Number(formData.biweeklyGross),
-          taxRate: Number(formData.taxRate) / 100,
+          biweeklyNet: Number(formData.biweeklyNet),
           nextPayDate: formData.nextPayDate
         },
         emergencyFund: {
@@ -75,7 +73,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ budgetData, setBudg
 
   const isStepValid = () => {
     switch (currentStep) {
-      case 1: return formData.biweeklyGross && Number(formData.biweeklyGross) > 0;
+      case 1: return formData.biweeklyNet && Number(formData.biweeklyNet) > 0;
       case 2: return formData.emergencyTarget && Number(formData.emergencyTarget) > 0;
       case 3: return formData.primaryGoal;
       default: return true;
@@ -188,35 +186,19 @@ const IncomeStep: React.FC<any> = ({ formData, setFormData }) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-2">
-          Biweekly Gross Salary *
+          Biweekly Net Pay *
         </label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">£</span>
           <input
             type="number"
-            value={formData.biweeklyGross}
-            onChange={(e) => setFormData({ ...formData, biweeklyGross: e.target.value })}
+            value={formData.biweeklyNet}
+            onChange={(e) => setFormData({ ...formData, biweeklyNet: e.target.value })}
             className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="2,500.00"
           />
         </div>
-        <p className="text-xs text-slate-500 mt-1">Your gross pay before taxes and deductions</p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">
-          Tax Rate (%)
-        </label>
-        <input
-          type="number"
-          value={formData.taxRate}
-          onChange={(e) => setFormData({ ...formData, taxRate: e.target.value })}
-          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="25"
-          min="0"
-          max="50"
-        />
-        <p className="text-xs text-slate-500 mt-1">Combined tax and deduction rate</p>
+        <p className="text-xs text-slate-500 mt-1">Your take-home pay after taxes and deductions</p>
       </div>
     </div>
 
@@ -232,20 +214,20 @@ const IncomeStep: React.FC<any> = ({ formData, setFormData }) => (
       />
     </div>
 
-    {formData.biweeklyGross && (
+    {formData.biweeklyNet && (
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
         <h4 className="font-semibold text-green-800 mb-2">Your Income Summary</h4>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <span className="text-green-700">Biweekly Net:</span>
             <div className="font-semibold">
-              £{(Number(formData.biweeklyGross) * (1 - Number(formData.taxRate) / 100)).toLocaleString()}
+              £{Number(formData.biweeklyNet).toLocaleString()}
             </div>
           </div>
           <div>
             <span className="text-green-700">Annual Net:</span>
             <div className="font-semibold">
-              £{(Number(formData.biweeklyGross) * (1 - Number(formData.taxRate) / 100) * 26).toLocaleString()}
+              £{(Number(formData.biweeklyNet) * 26).toLocaleString()}
             </div>
           </div>
         </div>
@@ -255,8 +237,8 @@ const IncomeStep: React.FC<any> = ({ formData, setFormData }) => (
 );
 
 const EmergencyStep: React.FC<any> = ({ formData, setFormData }) => {
-  const monthlyNet = formData.biweeklyGross 
-    ? (Number(formData.biweeklyGross) * (1 - Number(formData.taxRate) / 100) * 26) / 12 
+  const monthlyNet = formData.biweeklyNet 
+    ? (Number(formData.biweeklyNet) * 26) / 12 
     : 0;
 
   const suggestions = [
