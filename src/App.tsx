@@ -17,6 +17,8 @@ import OnboardingWizard from './components/OnboardingWizard';
 import MobileNavigation from './components/MobileNavigation';
 import QuickActions from './components/QuickActions';
 import LoadingSpinner from './components/LoadingSpinner';
+import CloudBackup from './components/CloudBackup';
+import SecurityAudit from './components/SecurityAudit';
 import useLocalStorage from './hooks/useLocalStorage';
 import { useAuth } from './hooks/useAuth';
 
@@ -115,6 +117,8 @@ function App() {
     { id: 'debts', name: 'Debts', icon: CreditCard },
     { id: 'goals', name: 'Goals', icon: Target },
     { id: 'analysis', name: 'Analysis', icon: Calculator },
+    { id: 'backup', name: 'Backup', icon: Bell },
+    { id: 'security', name: 'Security', icon: Bell },
     { id: 'profile', name: 'Profile', icon: User }
   ];
 
@@ -138,6 +142,10 @@ function App() {
         return <SavingsGoals budgetData={budgetData} setBudgetData={handleDataUpdate} />;
       case 'analysis':
         return <BudgetAnalysis budgetData={budgetData} />;
+      case 'backup':
+        return <CloudBackup currentUser={currentUser} />;
+      case 'security':
+        return <SecurityAudit currentUser={currentUser} />;
       case 'profile':
         return <UserProfile currentUser={currentUser} onLogout={logout} onUpdateProfile={handleProfileUpdate} />;
       default:

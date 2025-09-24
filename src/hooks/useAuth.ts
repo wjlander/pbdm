@@ -78,11 +78,23 @@ export const useAuth = () => {
     
     if (userIndex === -1) return false;
 
+    // Enhanced password validation
+    const validatePassword = (password: string): boolean => {
+      return password.length >= 8 &&
+             /[A-Z]/.test(password) &&
+             /[a-z]/.test(password) &&
+             /\d/.test(password) &&
+             /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    };
     // Verify current password if changing password
     if (updates.newPassword && updates.currentPassword) {
       const currentPasswordHash = simpleHash(updates.currentPassword);
       if (users[userIndex].passwordHash !== currentPasswordHash) {
         throw new Error('Current password is incorrect');
+      }
+      
+      if (!validatePassword(updates.newPassword)) {
+        throw new Error('New password does not meet security requirements');
       }
     }
 
