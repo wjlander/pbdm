@@ -335,9 +335,6 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
           ))}
         </div>
       )}
-    </>
-  );
-};
 
       {activeCategory === 'oneOff' && getCurrentCategoryExpenses().length > 0 && (
         <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
@@ -398,6 +395,7 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
           </div>
         </div>
       )}
+      </div>
     </>
   );
 };
