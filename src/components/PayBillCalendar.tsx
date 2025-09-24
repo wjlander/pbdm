@@ -301,43 +301,47 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
           .slice(0, 2)
           .map(event => event.date);
         
-        if (futurePayDates.length >= 2) {
-          const secondPayDate = futurePayDates[1];
+        if (futurePayDates.length >= 1) {
+          const nextPayDate = futurePayDates[0]; // 25th October
+          const secondPayDate = futurePayDates[1]; // 8th November (if exists)
           
-          // Calculate all unpaid expenses between this pay and the second future pay
-          const unpaidExpensesBetweenPays = allEvents
+          // Calculate all unpaid expenses between the NEXT payday and the payday AFTER that
+          // This is the period where the next payday's income needs to cover expenses
+          const expensesPeriodStart = nextPayDate;
+          const expensesPeriodEnd = secondPayDate || new Date(nextPayDate.getTime() + 14 * 24 * 60 * 60 * 1000); // Default to 14 days if no second payday
+          
+          const unpaidExpensesBetweenNextPays = allEvents
             .filter(event => 
               !event.isIncoming && 
               !event.isPaid &&
-              event.date > date && 
-              event.date <= secondPayDate
+              event.date > expensesPeriodStart && 
+              event.date <= expensesPeriodEnd
             )
             .reduce((sum, event) => sum + event.amount, 0);
 
-          // Calculate income between this pay and the second future pay (should include the first future pay)
-          const incomeBeforeSecondPay = allEvents
+          // Get the income amount for the next payday
+          const nextPayAmount = allEvents
             .filter(event => 
               event.isIncoming && 
-              event.date > date && 
-              event.date < secondPayDate
+              event.date.getTime() === nextPayDate.getTime()
             )
             .reduce((sum, event) => sum + event.amount, 0);
 
-          // Calculate what balance will be just before the second payday
-          const balanceBeforeSecondPay = runningBalance - unpaidExpensesBetweenPays + incomeBeforeSecondPay;
+          // Calculate if the next payday's income can cover expenses until the payday after
+          const shortfall = unpaidExpensesBetweenNextPays - nextPayAmount;
           
-          // If balance before second payday would be less than £100, suggest reserve
-          if (balanceBeforeSecondPay < 100) {
+          // If there's a shortfall, suggest reserving from current payday
+          if (shortfall > 0) {
             needsReserve = true;
             reserveType = 'reserve';
-            reserveAmount = Math.max(0, 100 - balanceBeforeSecondPay);
-            reserveMessage = `Set aside £${reserveAmount.toFixed(2)} to ensure you have at least £100 buffer before your payday on ${secondPayDate.toLocaleDateString('en-GB')}`;
-          } else if (balanceBeforeSecondPay > 500) {
+            reserveAmount = shortfall;
+            reserveMessage = `Set aside £${reserveAmount.toFixed(2)} as your payday on ${nextPayDate.toLocaleDateString('en-GB')} (£${nextPayAmount.toFixed(2)}) is short by £${shortfall.toFixed(2)} to cover bills until ${expensesPeriodEnd.toLocaleDateString('en-GB')}`;
+          } else if (shortfall < -200) {
             // If there's a surplus over £500, suggest saving it
             needsReserve = true;
             reserveType = 'save';
-            reserveAmount = Math.max(0, balanceBeforeSecondPay - 200); // Keep £200 buffer, save the rest
-            reserveMessage = `Consider saving £${reserveAmount.toFixed(2)} as you'll have a surplus of £${balanceBeforeSecondPay.toFixed(2)} before your next payday`;
+            reserveAmount = Math.abs(shortfall) - 200; // Keep £200 buffer, save the rest
+            reserveMessage = `Consider saving £${reserveAmount.toFixed(2)} as your payday on ${nextPayDate.toLocaleDateString('en-GB')} will have a surplus after covering bills until ${expensesPeriodEnd.toLocaleDateString('en-GB')}`;
           }
         }
       }
