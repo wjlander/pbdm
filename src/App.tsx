@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DollarSign, TrendingUp, CreditCard, PieChart, Calculator, Target, Calendar, Menu, X, Car, Heart, Camera, Bell, User, CheckCircle } from 'lucide-react';
-import LoginForm from './components/LoginForm';
-import UserProfile from './components/UserProfile';
+import SupabaseLoginForm from './components/SupabaseLoginForm';
+import SupabaseUserProfile from './components/SupabaseUserProfile';
 import IncomeTracker from './components/IncomeTracker';
 import ExpenseManager from './components/ExpenseManager';
 import DebtManager from './components/DebtManager';
@@ -21,41 +21,24 @@ import LoadingSpinner from './components/LoadingSpinner';
 import CloudBackup from './components/CloudBackup';
 import SecurityAudit from './components/SecurityAudit';
 import DatabaseStatus from './components/DatabaseStatus';
-import useLocalStorage from './hooks/useLocalStorage';
-import { useAuth } from './hooks/useAuth';
+import { useSupabaseAuth } from './hooks/useSupabaseAuth';
+import { useSupabaseBudgetData } from './hooks/useSupabaseBudgetData';
 
 function App() {
-  const { currentUser, isLoading: authLoading, login, logout, updateProfile, getPartnerUser } = useAuth();
+  const { user, loading: authLoading, signOut, updateProfile } = useSupabaseAuth();
+  const { budgetData, setBudgetData, loading: dataLoading, error: dataError } = useSupabaseBudgetData(user);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useLocalStorage('showOnboarding', true);
   
-  // Use user-specific storage keys
-  const storageKey = currentUser ? `budgetData_${currentUser.id}` : 'budgetData';
-  const [budgetData, setBudgetData] = useLocalStorage(storageKey, {
-    income: {
-      biweeklyGross: 0,
-      taxRate: 0.25,
-      nextPayDate: new Date().toISOString().split('T')[0]
-    },
-    expenses: {
-      fixed: [],
-      variable: [],
-      discretionary: [],
-      twentyEightDay: []
-    },
-    debts: [],
-    emergencyFund: {
-      current: 0,
-      target: 0
-    },
-    savingsGoals: [],
-    vehicles: [],
-    vehicleExpenses: [],
-    partner: null
-  });
+  // Check if user needs onboarding (no budget data yet)
+  const needsOnboarding = user && budgetData && 
+    budgetData.income.biweeklyNet === 0 && 
+    budgetData.emergencyFund.target === 0 &&
+    budgetData.expenses.fixed.length === 0;
+  
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const handleDataUpdate = (newData: any) => {
     setIsLoading(true);
@@ -77,25 +60,48 @@ function App() {
     }
   };
 
-  // Show loading spinner while checking authentication
-  if (authLoading) {
+  // Show loading spinner while checking authentication or loading data
+  if (authLoading || (user && dataLoading)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading..." />
+        <LoadingSpinner size="lg" text={authLoading ? "Checking authentication..." : "Loading your financial data..."} />
       </div>
     );
   }
 
   // Show login form if not authenticated
-  if (!currentUser) {
-    return <LoginForm onLogin={login} />;
+  if (!user) {
+    return <SupabaseLoginForm />;
+  }
+  
+  // Show error if data loading failed
+  if (dataError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="bg-white rounded-xl shadow-lg border border-red-200 p-8 max-w-md">
+          <div className="text-center">
+            <div className="bg-red-100 p-3 rounded-full w-16 h-16 mx-auto mb-4">
+              <X className="h-10 w-10 text-red-600" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">Database Error</h2>
+            <p className="text-slate-600 mb-4">{dataError}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  if (showOnboarding) {
+  if (showOnboarding || needsOnboarding) {
     return (
       <OnboardingWizard
         budgetData={budgetData}
-        setBudgetData={setBudgetData}
+        setBudgetData={handleDataUpdate}
         onComplete={completeOnboarding}
       />
     );
@@ -109,6 +115,13 @@ function App() {
     );
   }
 
+  // Create currentUser object for compatibility with existing components
+  const currentUser = user ? {
+    id: user.id,
+    username: user.email?.split('@')[0] || 'user',
+    displayName: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+    role: 'primary' as const
+  } : null;
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: PieChart },
     { id: 'couples', name: 'Couples', icon: Heart },
@@ -154,8 +167,8 @@ function App() {
       case 'profile':
         return (
           <div className="space-y-6">
-            <DatabaseStatus user={currentUser} />
-            <UserProfile currentUser={currentUser} onLogout={logout} onUpdateProfile={handleProfileUpdate} />
+            <DatabaseStatus user={user} />
+            <SupabaseUserProfile />
           </div>
         );
       default:
@@ -190,7 +203,7 @@ function App() {
               </div>
               <div>
                 <h1 className="text-xl md:text-2xl font-bold text-slate-800">Personal Finance Manager</h1>
-                <p className="text-xs text-slate-500 hidden sm:block">Welcome, {currentUser.displayName}</p>
+                <p className="text-xs text-slate-500 hidden sm:block">Welcome, {currentUser?.displayName}</p>
               </div>
             </div>
             
