@@ -34,7 +34,8 @@ function App() {
     emergencyFund: {
       current: 0,
       target: 0
-    }
+    },
+    savingsGoals: []
   });
 
   const [savingsGoals, setSavingsGoals] = useLocalStorage('savingsGoals', []);
@@ -68,9 +69,6 @@ function App() {
       </div>
     );
   }
-
-    savingsGoals: []
-  });
 
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: PieChart },
