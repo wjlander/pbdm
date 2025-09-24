@@ -95,27 +95,46 @@ deploy_app() {
     # Navigate to app directory
     cd $APP_DIR
     
-    # If this is an update, backup current version
-    if [ -d "dist" ]; then
-        log "Backing up current version..."
-        mv dist dist.backup.$(date +%Y%m%d_%H%M%S) || true
+    # Check if we're running from the source directory
+    if [ -f "../package.json" ]; then
+        log "Found source files in parent directory, copying..."
+        cp -r ../* . 2>/dev/null || true
+        # Remove the deploy script from the app directory to avoid conflicts
+        rm -f deploy.sh update.sh 2>/dev/null || true
+    elif [ -d "/tmp/app-source" ] && [ "$(ls -A /tmp/app-source 2>/dev/null)" ]; then
+        log "Found source files in /tmp/app-source/, copying..."
+        cp -r /tmp/app-source/* . 2>/dev/null || true
+    else
+        # Try to find source files in common locations
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        if [ -f "$SCRIPT_DIR/package.json" ]; then
+            log "Found source files in script directory, copying..."
+            cp -r "$SCRIPT_DIR"/* . 2>/dev/null || true
+            # Remove deploy scripts from app directory
+            rm -f deploy.sh update.sh 2>/dev/null || true
+        else
+            error "No source files found. Please ensure your application files are available in one of these locations:
+            1. Run deploy.sh from your project directory
+            2. Copy files to /tmp/app-source/
+            3. Place deploy.sh in your project directory"
+        fi
     fi
-    
-    # Copy source files (assuming they're in current directory)
-    log "Copying application files..."
-    cp -r /tmp/app-source/* . 2>/dev/null || {
-        warn "No source files found in /tmp/app-source/"
-        log "Please ensure your application files are available"
-    }
     
     # Install dependencies
     if [ -f "package.json" ]; then
         log "Installing Node.js dependencies..."
-        npm ci --production
+        npm install --production
         
         # Build the application
         log "Building application..."
         npm run build
+        
+        # Verify build was successful
+        if [ ! -d "dist" ] || [ -z "$(ls -A dist 2>/dev/null)" ]; then
+            error "Build failed or dist directory is empty"
+        fi
+        
+        log "Build completed successfully"
     else
         error "package.json not found. Please ensure your application files are properly copied."
     fi
