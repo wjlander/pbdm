@@ -8,7 +8,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ budgetData, setBudgetData }) => {
   const calculateMonthlyIncome = () => {
-    const biweeklyNet = budgetData.income.biweeklyGross * (1 - budgetData.income.taxRate);
+    const biweeklyNet = budgetData.income.biweeklyNet || 0;
     return (biweeklyNet * 26) / 12;
   };
 

@@ -79,9 +79,9 @@ const CouplesDashboard: React.FC<CouplesDashboardProps> = ({ budgetData, setBudg
   };
 
   const calculateCombinedIncome = () => {
-    const selfMonthlyIncome = (budgetData.income.biweeklyGross * (1 - budgetData.income.taxRate) * 26) / 12;
+    const selfMonthlyIncome = (budgetData.income.biweeklyNet * 26) / 12;
     const partnerMonthlyIncome = partner 
-      ? (partner.income.biweeklyGross * (1 - partner.income.taxRate) * 26) / 12 
+      ? (partner.income.biweeklyNet * 26) / 12 
       : 0;
     
     return {
