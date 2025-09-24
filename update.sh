@@ -117,11 +117,15 @@ update_application() {
     
     # Install/update dependencies
     log "Installing dependencies..."
-    npm ci --production --silent
+    npm ci --silent
     
     # Build application
     log "Building application..."
     npm run build --silent
+    
+    # Clean up dev dependencies after build
+    log "Cleaning up development dependencies..."
+    npm prune --production --silent
     
     # Set proper ownership and permissions
     chown -R $USER:$GROUP $APP_DIR
