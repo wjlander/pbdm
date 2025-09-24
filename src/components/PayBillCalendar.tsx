@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, DollarSign, AlertTriangle, CheckCircle, Clock, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface PayBillCalendarProps {
   budgetData: any;
+  setBudgetData?: (data: any) => void;
 }
 
 interface CalendarEvent {
@@ -23,9 +24,16 @@ interface DayAnalysis {
   status: 'good' | 'caution' | 'critical';
 }
 
-const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
+const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudgetData }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const [startingBalance, setStartingBalance] = useState(1000);
+  const [startingBalance, setStartingBalance] = useState(budgetData.startingBalance || 1000);
+
+  // Update starting balance when budgetData changes
+  useEffect(() => {
+    if (budgetData.startingBalance !== undefined) {
+      setStartingBalance(budgetData.startingBalance);
+    }
+  }, [budgetData.startingBalance]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-GB', {
@@ -271,7 +279,7 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
                 <input
                   type="number"
                   value={startingBalance}
-                  onChange={(e) => setStartingBalance(Number(e.target.value))}
+                  onChange={(e) => updateStartingBalance(Number(e.target.value))}
                   className="w-32 pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
               </div>

@@ -148,7 +148,7 @@ function App() {
       case 'couples':
         return <CouplesDashboard budgetData={budgetData} setBudgetData={handleDataUpdate} />;
       case 'calendar':
-        return <PayBillCalendar budgetData={budgetData} />;
+        return <PayBillCalendar budgetData={budgetData} setBudgetData={handleDataUpdate} />;
       case 'income':
         return <IncomeTracker budgetData={budgetData} setBudgetData={handleDataUpdate} />;
       case 'expenses':
