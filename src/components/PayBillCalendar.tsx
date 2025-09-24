@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, DollarSign, AlertTriangle, CheckCircle, Clock, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface PayBillCalendarProps {
   budgetData: any;
+  setBudgetData?: (data: any) => void;
 }
 
 interface CalendarEvent {
@@ -12,6 +13,8 @@ interface CalendarEvent {
   amount: number;
   category?: string;
   isIncoming: boolean;
+  isPaid?: boolean;
+  billId?: string;
 }
 
 interface DayAnalysis {
@@ -20,12 +23,31 @@ interface DayAnalysis {
   events: CalendarEvent[];
   needsReserve: boolean;
   reserveAmount: number;
+  reserveType: 'reserve' | 'save';
+  reserveMessage: string;
   status: 'good' | 'caution' | 'critical';
 }
 
-const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
+const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudgetData }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const [startingBalance, setStartingBalance] = useState(1000);
+  const [startingBalance, setStartingBalance] = useState(budgetData.startingBalance || 1000);
+
+  // Update starting balance when budgetData changes
+  useEffect(() => {
+    if (budgetData.startingBalance !== undefined) {
+      setStartingBalance(budgetData.startingBalance);
+    }
+  }, [budgetData.startingBalance]);
+
+  const updateStartingBalance = (newBalance: number) => {
+    setStartingBalance(newBalance);
+    if (setBudgetData) {
+      setBudgetData({
+        ...budgetData,
+        startingBalance: newBalance
+      });
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-GB', {
@@ -39,6 +61,7 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
     const startDate = new Date(budgetData.income.nextPayDate);
     const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
     const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    const trackingStartDate = budgetData.trackingStartDate ? new Date(budgetData.trackingStartDate) : new Date('1900-01-01');
     
     // Go back to find pay dates that might affect this month
     let currentPayDate = new Date(startDate);
@@ -48,7 +71,7 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
     
     // Generate pay dates for the period
     while (currentPayDate <= new Date(monthEnd.getTime() + 30 * 24 * 60 * 60 * 1000)) {
-      if (currentPayDate >= monthStart && currentPayDate <= monthEnd) {
+      if (currentPayDate >= monthStart && currentPayDate <= monthEnd && currentPayDate >= trackingStartDate) {
         payDates.push(new Date(currentPayDate));
       }
       currentPayDate.setDate(currentPayDate.getDate() + 14);
@@ -62,6 +85,9 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
     const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
     const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
     const trackingStartDate = budgetData.trackingStartDate ? new Date(budgetData.trackingStartDate) : new Date('1900-01-01');
+    
+    // Get bill payment status from Bill Tracker
+    const billPayments = budgetData.billPayments || {};
 
     // Fixed monthly expenses (assume due on various days)
     budgetData.expenses.fixed.forEach((expense: any, index: number) => {
@@ -71,13 +97,20 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
       // Skip if before tracking start date
       if (dueDate < trackingStartDate) return;
       
+      const billId = `fixed-${expense.id}`;
+      const monthKey = `${dueDate.getFullYear()}-${(dueDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      const monthPayments = billPayments[monthKey] || [];
+      const paymentStatus = monthPayments.find((p: any) => p.billId === billId);
+      
       billDates.push({
         date: dueDate,
         type: 'bill',
         name: expense.name,
         amount: expense.amount,
         category: 'fixed',
-        isIncoming: false
+        isIncoming: false,
+        isPaid: paymentStatus?.isPaid || false,
+        billId
       });
     });
 
@@ -89,13 +122,20 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
       // Skip if before tracking start date
       if (dueDate < trackingStartDate) return;
       
+      const billId = `variable-${expense.id}`;
+      const monthKey = `${dueDate.getFullYear()}-${(dueDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      const monthPayments = billPayments[monthKey] || [];
+      const paymentStatus = monthPayments.find((p: any) => p.billId === billId);
+      
       billDates.push({
         date: dueDate,
         type: 'bill',
         name: expense.name,
         amount: expense.amount,
         category: 'variable',
-        isIncoming: false
+        isIncoming: false,
+        isPaid: paymentStatus?.isPaid || false,
+        billId
       });
     });
 
@@ -112,13 +152,20 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
             continue;
           }
           
+          const billId = `28day-${expense.id}-${currentDue.toISOString().split('T')[0]}`;
+          const monthKey = `${currentDue.getFullYear()}-${(currentDue.getMonth() + 1).toString().padStart(2, '0')}`;
+          const monthPayments = billPayments[monthKey] || [];
+          const paymentStatus = monthPayments.find((p: any) => p.billId === billId);
+          
           billDates.push({
             date: new Date(currentDue),
             type: 'bill',
             name: `${expense.name} (28-day)`,
             amount: expense.amount,
             category: 'twentyEightDay',
-            isIncoming: false
+            isIncoming: false,
+            isPaid: paymentStatus?.isPaid || false,
+            billId
           });
         }
         currentDue.setDate(currentDue.getDate() + 28);
@@ -132,13 +179,20 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
       // Skip if before tracking start date
       if (dueDate < trackingStartDate) return;
       
+      const billId = `debt-${debt.id}`;
+      const monthKey = `${dueDate.getFullYear()}-${(dueDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      const monthPayments = billPayments[monthKey] || [];
+      const paymentStatus = monthPayments.find((p: any) => p.billId === billId);
+      
       billDates.push({
         date: dueDate,
         type: 'debt',
         name: `${debt.name} Payment`,
         amount: debt.minimumPayment,
         category: 'debt',
-        isIncoming: false
+        isIncoming: false,
+        isPaid: paymentStatus?.isPaid || false,
+        billId
       });
     });
 
@@ -149,6 +203,47 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
     const payDates = generatePayDates(selectedMonth);
     const billDates = generateBillDates(selectedMonth);
     const fortnightlyNet = budgetData.income.biweeklyNet || 0;
+    const trackingStartDate = budgetData.trackingStartDate ? new Date(budgetData.trackingStartDate) : new Date('1900-01-01');
+    const selectedMonthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+    
+    // Calculate starting balance for this month
+    let monthStartingBalance = startingBalance;
+    
+    // If we're viewing a month after the tracking start month, calculate the carried forward balance
+    if (selectedMonthStart > new Date(trackingStartDate.getFullYear(), trackingStartDate.getMonth(), 1)) {
+      // Calculate balance from tracking start date to end of previous month
+      const prevMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1, 1);
+      const prevMonthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 0);
+      
+      // Get all events from tracking start to end of previous month
+      let carryForwardBalance = startingBalance;
+      
+      // Calculate through each month from tracking start to previous month
+      let currentMonth = new Date(trackingStartDate.getFullYear(), trackingStartDate.getMonth(), 1);
+      
+      while (currentMonth <= prevMonth) {
+        const monthPayDates = generatePayDates(currentMonth);
+        const monthBillDates = generateBillDates(currentMonth);
+        
+        // Add income for this month
+        monthPayDates.forEach(payDate => {
+          if (payDate >= trackingStartDate) {
+            carryForwardBalance += fortnightlyNet;
+          }
+        });
+        
+        // Subtract expenses for this month (only unpaid ones)
+        monthBillDates.forEach(bill => {
+          if (!bill.isPaid && bill.date >= trackingStartDate) {
+            carryForwardBalance -= bill.amount;
+          }
+        });
+        
+        currentMonth.setMonth(currentMonth.getMonth() + 1);
+      }
+      
+      monthStartingBalance = carryForwardBalance;
+    }
     
     // Combine all events
     const allEvents: CalendarEvent[] = [
@@ -167,7 +262,7 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
 
     // Calculate running balance and identify reserve needs
     const analysis: DayAnalysis[] = [];
-    let runningBalance = startingBalance;
+    let runningBalance = monthStartingBalance;
     
     const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
     const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
@@ -192,24 +287,62 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
       
       runningBalance += dayIncome - dayExpenses;
 
-      // Look ahead to next pay date to see if we need to reserve money
-      const nextPayDate = payDates.find(payDate => payDate > date);
+      // Calculate reserve needs for income days only
       let reserveAmount = 0;
       let needsReserve = false;
+     let reserveType: 'reserve' | 'save' = 'reserve';
+     let reserveMessage = '';
+      
+      if (dayIncome > 0) { // This is a pay day
+        // Find next 2 pay dates after this one
+        const futurePayDates = allEvents
+          .filter(event => event.isIncoming && event.date > date)
+          .sort((a, b) => a.date.getTime() - b.date.getTime())
+          .slice(0, 2)
+          .map(event => event.date);
+        
+        if (futurePayDates.length >= 1) {
+          const nextPayDate = futurePayDates[0]; // 25th October
+          const secondPayDate = futurePayDates[1]; // 8th November (if exists)
+          
+          // Calculate all unpaid expenses between the NEXT payday and the payday AFTER that
+          // This is the period where the next payday's income needs to cover expenses
+          const expensesPeriodStart = nextPayDate;
+          const expensesPeriodEnd = secondPayDate || new Date(nextPayDate.getTime() + 14 * 24 * 60 * 60 * 1000); // Default to 14 days if no second payday
+          
+          const unpaidExpensesBetweenNextPays = allEvents
+            .filter(event => 
+              !event.isIncoming && 
+              !event.isPaid &&
+              event.date > expensesPeriodStart && 
+              event.date <= expensesPeriodEnd
+            )
+            .reduce((sum, event) => sum + event.amount, 0);
 
-      if (nextPayDate) {
-        // Calculate expenses between now and next pay
-        const expensesBetween = allEvents
-          .filter(event => 
-            !event.isIncoming && 
-            event.date > date && 
-            event.date <= nextPayDate
-          )
-          .reduce((sum, event) => sum + event.amount, 0);
+          // Get the income amount for the next payday
+          const nextPayAmount = allEvents
+            .filter(event => 
+              event.isIncoming && 
+              event.date.getTime() === nextPayDate.getTime()
+            )
+            .reduce((sum, event) => sum + event.amount, 0);
 
-        if (expensesBetween > 0 && runningBalance - expensesBetween < 100) {
-          needsReserve = true;
-          reserveAmount = expensesBetween + 100 - (runningBalance - dayIncome + dayExpenses);
+          // Calculate if the next payday's income can cover expenses until the payday after
+          const shortfall = unpaidExpensesBetweenNextPays - nextPayAmount;
+          
+          // If there's a shortfall, suggest reserving from current payday
+          if (shortfall > 0) {
+            needsReserve = true;
+            reserveType = 'reserve';
+            reserveAmount = shortfall;
+            reserveMessage = `Set aside £${reserveAmount.toFixed(2)} as your payday on ${nextPayDate.toLocaleDateString('en-GB')} (£${nextPayAmount.toFixed(2)}) is short by £${shortfall.toFixed(2)} to cover bills until ${expensesPeriodEnd.toLocaleDateString('en-GB')}`;
+          } else if (shortfall < -200) {
+            // If there's a surplus over £500, suggest saving it
+            needsReserve = true;
+            reserveType = 'save';
+            reserveAmount = Math.abs(shortfall) - 200; // Keep £200 buffer, save the rest
+            reserveMessage = `Consider saving £${reserveAmount.toFixed(2)} as your payday on ${nextPayDate.toLocaleDateString('en-GB')} will have a surplus after covering bills until ${expensesPeriodEnd.toLocaleDateString('en-GB')}`;
+          }
         }
       }
 
@@ -223,6 +356,8 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
         events,
         needsReserve,
         reserveAmount: Math.max(0, reserveAmount),
+        reserveType,
+        reserveMessage,
         status
       });
     }
@@ -271,8 +406,9 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
                 <input
                   type="number"
                   value={startingBalance}
-                  onChange={(e) => setStartingBalance(Number(e.target.value))}
+                  onChange={(e) => updateStartingBalance(Number(e.target.value))}
                   className="w-32 pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  title={`Starting balance from ${budgetData.trackingStartDate || 'tracking start date'}`}
                 />
               </div>
             </div>
@@ -331,7 +467,12 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-2">
               <span className="h-5 w-5 text-slate-600 font-bold flex items-center justify-center">£</span>
-              <span className="font-medium text-slate-800">Month End Balance</span>
+              <span className="font-medium text-slate-800">
+                {selectedMonth.getMonth() === new Date().getMonth() && selectedMonth.getFullYear() === new Date().getFullYear() 
+                  ? 'Current Balance' 
+                  : 'Month End Balance'
+                }
+              </span>
             </div>
             <div className="text-sm text-slate-700">
               {formatCurrency(calendarAnalysis[calendarAnalysis.length - 1]?.balance || startingBalance)}
@@ -364,11 +505,15 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
                 </div>
                 
                 {day.needsReserve && (
-                  <div className="bg-yellow-100 border border-yellow-300 rounded-lg px-3 py-1">
+                  <div className={`${day.reserveType === 'save' ? 'bg-green-100 border-green-300' : 'bg-yellow-100 border-yellow-300'} rounded-lg px-3 py-1`}>
                     <div className="flex items-center space-x-2">
-                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                      <span className="text-sm font-medium text-yellow-800">
-                        Reserve {formatCurrency(day.reserveAmount)}
+                      {day.reserveType === 'save' ? (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      )}
+                      <span className={`text-sm font-medium ${day.reserveType === 'save' ? 'text-green-800' : 'text-yellow-800'}`}>
+                        {day.reserveType === 'save' ? 'Save' : 'Reserve'} {formatCurrency(day.reserveAmount)}
                       </span>
                     </div>
                   </div>
@@ -400,9 +545,12 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
                       <div key={i} className="flex items-center justify-between text-sm">
                         <div className="flex items-center space-x-2">
                           {getEventIcon(event.type)}
-                          <span>{event.name}</span>
+                          <span className={event.isPaid ? 'line-through text-slate-500' : ''}>
+                            {event.name}
+                            {event.isPaid && <span className="ml-2 text-green-600 text-xs">(Paid)</span>}
+                          </span>
                         </div>
-                        <span className="font-semibold text-red-600">
+                        <span className={`font-semibold ${event.isPaid ? 'text-slate-500 line-through' : 'text-red-600'}`}>
                           -{formatCurrency(event.amount)}
                         </span>
                       </div>
@@ -412,9 +560,9 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
               </div>
 
               {day.needsReserve && (
-                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Cash Flow Alert:</strong> You should reserve {formatCurrency(day.reserveAmount)} from today's income to cover upcoming expenses before your next payday.
+                <div className={`mt-3 p-3 ${day.reserveType === 'save' ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} rounded-lg`}>
+                  <p className={`text-sm ${day.reserveType === 'save' ? 'text-green-800' : 'text-yellow-800'}`}>
+                    <strong>{day.reserveType === 'save' ? 'Savings Opportunity:' : 'Reserve Recommendation:'}</strong> {day.reserveMessage}
                   </p>
                 </div>
               )}
