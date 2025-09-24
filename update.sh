@@ -2,7 +2,9 @@
 
 # Personal Finance Manager Update Script
 # For Ubuntu/Debian servers
-
+sudo mkdir -p /tmp/app-source
+sudo cp -r * /tmp/app-source/
+sudo rm -f /tmp/app-source/deploy.sh /tmp/app-source/update.sh
 set -e
 
 # Configuration
