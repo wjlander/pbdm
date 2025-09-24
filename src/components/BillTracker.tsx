@@ -29,11 +29,16 @@ const BillTracker: React.FC<BillTrackerProps> = ({ budgetData, setBudgetData }) 
     const existingPayments = budgetData.billPayments || {};
     const monthPayments = existingPayments[month] || [];
     const generatedBills: BillPayment[] = [];
+    const trackingStartDate = budgetData.trackingStartDate ? new Date(budgetData.trackingStartDate) : new Date('1900-01-01');
 
     // Generate bills from fixed expenses
     budgetData.expenses.fixed.forEach((expense: any) => {
-      const dueDay = expense.dueDate ? parseInt(expense.dueDate) : 15; // Default to 15th if no due date
+      const dueDay = expense.dueDayOfMonth || 15; // Use specified day or default to 15th
       const dueDate = `${month}-${dueDay.toString().padStart(2, '0')}`;
+      const dueDateObj = new Date(dueDate);
+      
+      // Skip if before tracking start date
+      if (dueDateObj < trackingStartDate) return;
       
       const existingPayment = monthPayments.find((p: BillPayment) => p.billId === `fixed-${expense.id}`);
       
@@ -51,8 +56,12 @@ const BillTracker: React.FC<BillTrackerProps> = ({ budgetData, setBudgetData }) 
 
     // Generate bills from variable expenses
     budgetData.expenses.variable.forEach((expense: any) => {
-      const dueDay = expense.dueDate ? parseInt(expense.dueDate) : 20; // Default to 20th if no due date
+      const dueDay = expense.dueDayOfMonth || 20; // Use specified day or default to 20th
       const dueDate = `${month}-${dueDay.toString().padStart(2, '0')}`;
+      const dueDateObj = new Date(dueDate);
+      
+      // Skip if before tracking start date
+      if (dueDateObj < trackingStartDate) return;
       
       const existingPayment = monthPayments.find((p: BillPayment) => p.billId === `variable-${expense.id}`);
       
@@ -79,6 +88,12 @@ const BillTracker: React.FC<BillTrackerProps> = ({ budgetData, setBudgetData }) 
       let currentDue = new Date(startDate);
       while (currentDue <= monthEnd) {
         if (currentDue >= monthStart && currentDue <= monthEnd) {
+          // Skip if before tracking start date
+          if (currentDue < trackingStartDate) {
+            currentDue.setDate(currentDue.getDate() + 28);
+            continue;
+          }
+          
           const dueDate = currentDue.toISOString().split('T')[0];
           const billId = `28day-${expense.id}-${dueDate}`;
           
@@ -103,6 +118,10 @@ const BillTracker: React.FC<BillTrackerProps> = ({ budgetData, setBudgetData }) 
     budgetData.debts.forEach((debt: any) => {
       const dueDay = debt.paymentDate || 15;
       const dueDate = `${month}-${dueDay.toString().padStart(2, '0')}`;
+      const dueDateObj = new Date(dueDate);
+      
+      // Skip if before tracking start date
+      if (dueDateObj < trackingStartDate) return;
       
       const existingPayment = monthPayments.find((p: BillPayment) => p.billId === `debt-${debt.id}`);
       
