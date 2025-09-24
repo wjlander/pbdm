@@ -28,6 +28,7 @@ const Dashboard: React.FC<DashboardProps> = ({ budgetData, setBudgetData }) => {
   const monthlyIncome = calculateMonthlyIncome();
   const monthlyExpenses = calculateMonthlyExpenses();
   const totalDebt = calculateTotalDebt();
+  const totalVehicleExpenses = budgetData.vehicleExpenses?.reduce((sum: number, exp: any) => sum + exp.amount, 0) || 0;
   const monthlySurplus = monthlyIncome - monthlyExpenses;
 
   const stats = [
@@ -62,6 +63,14 @@ const Dashboard: React.FC<DashboardProps> = ({ budgetData, setBudgetData }) => {
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
       borderColor: 'border-orange-200'
+    },
+    {
+      name: 'Vehicle Expenses (Annual)',
+      value: totalVehicleExpenses,
+      icon: TrendingDown,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200'
     }
   ];
 

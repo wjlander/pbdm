@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { DollarSign, TrendingUp, CreditCard, PieChart, Calculator, Target, Calendar, Menu, X } from 'lucide-react';
+import { DollarSign, TrendingUp, CreditCard, PieChart, Calculator, Target, Calendar, Menu, X, Car, Heart, Camera, Bell } from 'lucide-react';
 import IncomeTracker from './components/IncomeTracker';
 import ExpenseManager from './components/ExpenseManager';
 import DebtManager from './components/DebtManager';
 import BudgetAnalysis from './components/BudgetAnalysis';
 import Dashboard from './components/Dashboard';
 import PayBillCalendar from './components/PayBillCalendar';
+import VehicleManager from './components/VehicleManager';
+import SavingsGoals from './components/SavingsGoals';
+import CouplesDashboard from './components/CouplesDashboard';
+import NotificationCenter from './components/NotificationCenter';
+import ReceiptScanner from './components/ReceiptScanner';
 import OnboardingWizard from './components/OnboardingWizard';
 import MobileNavigation from './components/MobileNavigation';
 import QuickActions from './components/QuickActions';
@@ -16,6 +21,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   const [showOnboarding, setShowOnboarding] = useLocalStorage('showOnboarding', true);
   
   const [budgetData, setBudgetData] = useLocalStorage('budgetData', {
@@ -35,7 +41,10 @@ function App() {
       current: 0,
       target: 0
     },
-    savingsGoals: []
+    savingsGoals: [],
+    vehicles: [],
+    vehicleExpenses: [],
+    partner: null
   });
 
   const [savingsGoals, setSavingsGoals] = useLocalStorage('savingsGoals', []);
@@ -72,10 +81,13 @@ function App() {
 
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: PieChart },
+    { id: 'couples', name: 'Couples', icon: Heart },
     { id: 'calendar', name: 'Pay Calendar', icon: Calendar },
     { id: 'income', name: 'Income', icon: DollarSign },
     { id: 'expenses', name: 'Expenses', icon: TrendingUp },
+    { id: 'vehicles', name: 'Vehicles', icon: Car },
     { id: 'debts', name: 'Debts', icon: CreditCard },
+    { id: 'goals', name: 'Goals', icon: Target },
     { id: 'analysis', name: 'Analysis', icon: Calculator }
   ];
 
@@ -83,14 +95,20 @@ function App() {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard budgetData={budgetData} setBudgetData={handleDataUpdate} />;
+      case 'couples':
+        return <CouplesDashboard budgetData={budgetData} setBudgetData={handleDataUpdate} />;
       case 'calendar':
         return <PayBillCalendar budgetData={budgetData} />;
       case 'income':
         return <IncomeTracker budgetData={budgetData} setBudgetData={handleDataUpdate} />;
       case 'expenses':
         return <ExpenseManager budgetData={budgetData} setBudgetData={handleDataUpdate} />;
+      case 'vehicles':
+        return <VehicleManager budgetData={budgetData} setBudgetData={handleDataUpdate} />;
       case 'debts':
         return <DebtManager budgetData={budgetData} setBudgetData={handleDataUpdate} />;
+      case 'goals':
+        return <SavingsGoals budgetData={budgetData} setBudgetData={handleDataUpdate} />;
       case 'analysis':
         return <BudgetAnalysis budgetData={budgetData} />;
       default:
@@ -98,6 +116,22 @@ function App() {
     }
   };
 
+  const handleReceiptExpense = (expense: any) => {
+    const newExpense = {
+      id: Date.now().toString(),
+      name: expense.name,
+      amount: expense.amount,
+      category: expense.category
+    };
+
+    setBudgetData({
+      ...budgetData,
+      expenses: {
+        ...budgetData.expenses,
+        [expense.category]: [...budgetData.expenses[expense.category], newExpense]
+      }
+    });
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pb-16 md:pb-0">
       <header className="bg-white shadow-lg border-b border-slate-200">
@@ -114,6 +148,16 @@ function App() {
             </div>
             
             <div className="flex items-center space-x-4">
+              <NotificationCenter budgetData={budgetData} setBudgetData={handleDataUpdate} />
+              
+              <button
+                onClick={() => setShowReceiptScanner(true)}
+                className="p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors hidden md:block"
+                title="Scan Receipt"
+              >
+                <Camera className="h-6 w-6" />
+              </button>
+              
               <button
                 onClick={() => setShowOnboarding(true)}
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium hidden md:block"
@@ -193,6 +237,13 @@ function App() {
         
         <QuickActions budgetData={budgetData} setBudgetData={handleDataUpdate} />
       </div>
+      
+      {showReceiptScanner && (
+        <ReceiptScanner
+          onExpenseExtracted={handleReceiptExpense}
+          onClose={() => setShowReceiptScanner(false)}
+        />
+      )}
       
       <MobileNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>

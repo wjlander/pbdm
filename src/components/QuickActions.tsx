@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Plus, Zap, DollarSign, CreditCard, Target } from 'lucide-react';
+import { Plus, Zap, DollarSign, CreditCard, Target, Camera } from 'lucide-react';
 
 interface QuickActionsProps {
   budgetData: any;
   setBudgetData: (data: any) => void;
+  onShowReceiptScanner?: () => void;
 }
 
-const QuickActions: React.FC<QuickActionsProps> = ({ budgetData, setBudgetData }) => {
+const QuickActions: React.FC<QuickActionsProps> = ({ budgetData, setBudgetData, onShowReceiptScanner }) => {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickExpense, setQuickExpense] = useState({ name: '', amount: '', category: 'discretionary' });
 
@@ -57,6 +58,13 @@ const QuickActions: React.FC<QuickActionsProps> = ({ budgetData, setBudgetData }
           });
         }
       }
+    },
+    {
+      id: 'scan-receipt',
+      name: 'Scan Receipt',
+      icon: Camera,
+      color: 'bg-purple-500 hover:bg-purple-600',
+      action: () => onShowReceiptScanner?.()
     }
   ];
 
