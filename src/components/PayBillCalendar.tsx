@@ -291,11 +291,13 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
       
       if (dayIncome > 0) { // This is a pay day
         // Find next pay date after this one
-        const nextPayDate = payDates.find(payDate => payDate > date);
+        const nextPayDate = allEvents
+          .filter(event => event.isIncoming && event.date > date)
+          .sort((a, b) => a.date.getTime() - b.date.getTime())[0]?.date;
         
         if (nextPayDate) {
-          // Calculate all expenses between this pay and next pay
-          const expensesBetweenPays = allEvents
+          // Calculate all unpaid expenses between this pay and next pay
+          const unpaidExpensesBetweenPays = allEvents
             .filter(event => 
               !event.isIncoming && 
               !event.isPaid &&
@@ -304,11 +306,22 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
             )
             .reduce((sum, event) => sum + event.amount, 0);
 
-          // If expenses would leave us with less than £100 buffer, suggest reserve
-          const balanceAfterExpenses = runningBalance - expensesBetweenPays;
-          if (expensesBetweenPays > 0 && balanceAfterExpenses < 100) {
+          // Calculate income between this pay and next pay (should be 0 for next payday calculation)
+          const incomeBeforeNextPay = allEvents
+            .filter(event => 
+              event.isIncoming && 
+              event.date > date && 
+              event.date < nextPayDate
+            )
+            .reduce((sum, event) => sum + event.amount, 0);
+
+          // Calculate what balance will be just before next payday
+          const balanceBeforeNextPay = runningBalance - unpaidExpensesBetweenPays + incomeBeforeNextPay;
+          
+          // If balance before next payday would be less than £100, suggest reserve
+          if (unpaidExpensesBetweenPays > 0 && balanceBeforeNextPay < 100) {
             needsReserve = true;
-            reserveAmount = Math.max(0, expensesBetweenPays + 100 - (runningBalance - dayIncome));
+            reserveAmount = Math.max(0, 100 - balanceBeforeNextPay);
           }
         }
       }
@@ -523,11 +536,7 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
               {day.needsReserve && (
                 <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-800">
-                    <strong>Reserve Recommendation:</strong> From today's pay of {formatCurrency(day.events.filter(e => e.isIncoming).reduce((sum, e) => sum + e.amount, 0))}, 
-                    set aside {formatCurrency(day.reserveAmount)} to cover {formatCurrency(day.events.filter(e => e.isIncoming).length > 0 ? 
-                      allEvents.filter(event => !event.isIncoming && event.date > day.date && 
-                        event.date <= (payDates.find(payDate => payDate > day.date) || new Date())).reduce((sum, event) => sum + event.amount, 0) : 0)} 
-                    in upcoming bills before your next payday.
+                    <strong>Reserve Recommendation:</strong> Set aside {formatCurrency(day.reserveAmount)} from today's pay to ensure you have at least £100 buffer before your next payday.
                   </p>
                 </div>
               )}
