@@ -3,9 +3,10 @@ import { DollarSign, TrendingDown, TrendingUp, AlertCircle, Target } from 'lucid
 
 interface DashboardProps {
   budgetData: any;
+  setBudgetData?: (data: any) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ budgetData }) => {
+const Dashboard: React.FC<DashboardProps> = ({ budgetData, setBudgetData }) => {
   const calculateMonthlyIncome = () => {
     const biweeklyNet = budgetData.income.biweeklyGross * (1 - budgetData.income.taxRate);
     return (biweeklyNet * 26) / 12;
@@ -27,6 +28,7 @@ const Dashboard: React.FC<DashboardProps> = ({ budgetData }) => {
   const monthlyIncome = calculateMonthlyIncome();
   const monthlyExpenses = calculateMonthlyExpenses();
   const totalDebt = calculateTotalDebt();
+  const totalVehicleExpenses = budgetData.vehicleExpenses?.reduce((sum: number, exp: any) => sum + exp.amount, 0) || 0;
   const monthlySurplus = monthlyIncome - monthlyExpenses;
 
   const stats = [
@@ -61,6 +63,14 @@ const Dashboard: React.FC<DashboardProps> = ({ budgetData }) => {
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
       borderColor: 'border-orange-200'
+    },
+    {
+      name: 'Vehicle Expenses (Annual)',
+      value: totalVehicleExpenses,
+      icon: TrendingDown,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200'
     }
   ];
 
@@ -74,6 +84,18 @@ const Dashboard: React.FC<DashboardProps> = ({ budgetData }) => {
   const emergencyFundProgress = budgetData.emergencyFund.target > 0 
     ? (budgetData.emergencyFund.current / budgetData.emergencyFund.target) * 100 
     : 0;
+
+  const updateEmergencyFund = (amount: number) => {
+    if (setBudgetData) {
+      setBudgetData({
+        ...budgetData,
+        emergencyFund: {
+          ...budgetData.emergencyFund,
+          current: Math.max(0, budgetData.emergencyFund.current + amount)
+        }
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -103,7 +125,25 @@ const Dashboard: React.FC<DashboardProps> = ({ budgetData }) => {
         <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
           <div className="flex items-center space-x-3 mb-6">
             <Target className="h-6 w-6 text-blue-600" />
-            <h3 className="text-lg font-semibold text-slate-800">Emergency Fund Progress</h3>
+            <div className="flex-1 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-800">Emergency Fund Progress</h3>
+              {setBudgetData && (
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => updateEmergencyFund(100)}
+                    className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 transition-colors"
+                  >
+                    +£100
+                  </button>
+                  <button
+                    onClick={() => updateEmergencyFund(500)}
+                    className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 transition-colors"
+                  >
+                    +£500
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="space-y-4">
@@ -123,6 +163,11 @@ const Dashboard: React.FC<DashboardProps> = ({ budgetData }) => {
               <span className="text-lg font-semibold text-blue-600">
                 {emergencyFundProgress.toFixed(1)}% Complete
               </span>
+              {emergencyFundProgress >= 100 && (
+                <div className="mt-2 text-sm text-green-600 font-medium">
+                  🎉 Goal Achieved!
+                </div>
+              )}
             </div>
           </div>
         </div>
