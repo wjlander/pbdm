@@ -27,12 +27,19 @@ const DatabaseStatus: React.FC<DatabaseStatusProps> = ({ user }) => {
         throw connectionError;
       }
 
-      // Get database info
-      const { data: versionData } = await supabase.rpc('version');
+      // Get database info - handle missing version RPC gracefully
+      let versionData = 'Unknown';
+      try {
+        const { data } = await supabase.rpc('version');
+        versionData = data || 'Unknown';
+      } catch (versionError) {
+        // Version RPC doesn't exist, use default
+        versionData = 'Unknown';
+      }
       
       setDbInfo({
         tablesAccessible: true,
-        version: versionData || 'Unknown',
+        version: versionData,
         userConnected: !!user,
         timestamp: new Date().toISOString()
       });
