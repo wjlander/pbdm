@@ -548,13 +548,6 @@ const UserSetup: React.FC<UserSetupProps> = ({ onSetupComplete, onCancel }) => {
     if (step === 1 && validateStep1()) {
       setStep(2);
     } else if (step === 2 && validateStep2()) {
-      // Store 2FA preferences
-      if (primaryUser.enable2FA) {
-        localStorage.setItem('2fa_user_1', 'enabled');
-      }
-      if (partnerUser.enable2FA) {
-        localStorage.setItem('2fa_user_2', 'enabled');
-      }
       onSetupComplete(primaryUser, partnerUser);
     }
   };
@@ -590,6 +583,7 @@ const UserSetup: React.FC<UserSetupProps> = ({ onSetupComplete, onCancel }) => {
                   onChange={(e) => setPrimaryUser({ ...primaryUser, displayName: e.target.value })}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Your name"
+                  required
                 />
               </div>
               <div>
@@ -602,6 +596,7 @@ const UserSetup: React.FC<UserSetupProps> = ({ onSetupComplete, onCancel }) => {
                   onChange={(e) => setPrimaryUser({ ...primaryUser, username: e.target.value })}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Choose a username"
+                  required
                 />
               </div>
               <div>
@@ -617,6 +612,7 @@ const UserSetup: React.FC<UserSetupProps> = ({ onSetupComplete, onCancel }) => {
                   }}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Create a password"
+                  required
                 />
                 {primaryUser.password && (
                   <div className="mt-2">
@@ -650,21 +646,8 @@ const UserSetup: React.FC<UserSetupProps> = ({ onSetupComplete, onCancel }) => {
                   onChange={(e) => setPrimaryUser({ ...primaryUser, confirmPassword: e.target.value })}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Confirm your password"
+                  required
                 />
-              </div>
-              <div>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={primaryUser.enable2FA}
-                    onChange={(e) => setPrimaryUser({ ...primaryUser, enable2FA: e.target.checked })}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-slate-700">Enable Two-Factor Authentication</span>
-                </label>
-                <p className="text-xs text-slate-500 mt-1">
-                  Adds an extra layer of security to your account
-                </p>
               </div>
             </div>
           ) : (
@@ -679,6 +662,7 @@ const UserSetup: React.FC<UserSetupProps> = ({ onSetupComplete, onCancel }) => {
                   onChange={(e) => setPartnerUser({ ...partnerUser, displayName: e.target.value })}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Partner's name"
+                  required
                 />
               </div>
               <div>
@@ -691,6 +675,7 @@ const UserSetup: React.FC<UserSetupProps> = ({ onSetupComplete, onCancel }) => {
                   onChange={(e) => setPartnerUser({ ...partnerUser, username: e.target.value })}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Choose a username"
+                  required
                 />
               </div>
               <div>
@@ -703,6 +688,7 @@ const UserSetup: React.FC<UserSetupProps> = ({ onSetupComplete, onCancel }) => {
                   onChange={(e) => setPartnerUser({ ...partnerUser, password: e.target.value })}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Create a password"
+                  required
                 />
               </div>
               <div>
@@ -715,21 +701,8 @@ const UserSetup: React.FC<UserSetupProps> = ({ onSetupComplete, onCancel }) => {
                   onChange={(e) => setPartnerUser({ ...partnerUser, confirmPassword: e.target.value })}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Confirm password"
+                  required
                 />
-              </div>
-              <div>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={partnerUser.enable2FA}
-                    onChange={(e) => setPartnerUser({ ...partnerUser, enable2FA: e.target.checked })}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-slate-700">Enable Two-Factor Authentication</span>
-                </label>
-                <p className="text-xs text-slate-500 mt-1">
-                  Adds an extra layer of security to your account
-                </p>
               </div>
             </div>
           )}
