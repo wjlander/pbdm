@@ -51,7 +51,7 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ budgetData, setBudgetDa
       }),
       ...(activeCategory === 'variable' && {
         dueDayOfMonth: newExpense.dueDayOfMonth || 1
-      })
+      }),
       ...(activeCategory === 'oneOff' && newExpense.dueDate && {
         dueDate: newExpense.dueDate
       })
