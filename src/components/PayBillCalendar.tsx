@@ -35,6 +35,16 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
     }
   }, [budgetData.startingBalance]);
 
+  const updateStartingBalance = (newBalance: number) => {
+    setStartingBalance(newBalance);
+    if (setBudgetData) {
+      setBudgetData({
+        ...budgetData,
+        startingBalance: newBalance
+      });
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-GB', {
       style: 'currency',
