@@ -59,6 +59,7 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
     const startDate = new Date(budgetData.income.nextPayDate);
     const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
     const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    const trackingStartDate = budgetData.trackingStartDate ? new Date(budgetData.trackingStartDate) : new Date('1900-01-01');
     
     // Go back to find pay dates that might affect this month
     let currentPayDate = new Date(startDate);
@@ -68,7 +69,7 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
     
     // Generate pay dates for the period
     while (currentPayDate <= new Date(monthEnd.getTime() + 30 * 24 * 60 * 60 * 1000)) {
-      if (currentPayDate >= monthStart && currentPayDate <= monthEnd) {
+      if (currentPayDate >= monthStart && currentPayDate <= monthEnd && currentPayDate >= trackingStartDate) {
         payDates.push(new Date(currentPayDate));
       }
       currentPayDate.setDate(currentPayDate.getDate() + 14);
@@ -200,6 +201,47 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
     const payDates = generatePayDates(selectedMonth);
     const billDates = generateBillDates(selectedMonth);
     const fortnightlyNet = budgetData.income.biweeklyNet || 0;
+    const trackingStartDate = budgetData.trackingStartDate ? new Date(budgetData.trackingStartDate) : new Date('1900-01-01');
+    const selectedMonthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+    
+    // Calculate starting balance for this month
+    let monthStartingBalance = startingBalance;
+    
+    // If we're viewing a month after the tracking start month, calculate the carried forward balance
+    if (selectedMonthStart > new Date(trackingStartDate.getFullYear(), trackingStartDate.getMonth(), 1)) {
+      // Calculate balance from tracking start date to end of previous month
+      const prevMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1, 1);
+      const prevMonthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 0);
+      
+      // Get all events from tracking start to end of previous month
+      let carryForwardBalance = startingBalance;
+      
+      // Calculate through each month from tracking start to previous month
+      let currentMonth = new Date(trackingStartDate.getFullYear(), trackingStartDate.getMonth(), 1);
+      
+      while (currentMonth <= prevMonth) {
+        const monthPayDates = generatePayDates(currentMonth);
+        const monthBillDates = generateBillDates(currentMonth);
+        
+        // Add income for this month
+        monthPayDates.forEach(payDate => {
+          if (payDate >= trackingStartDate) {
+            carryForwardBalance += fortnightlyNet;
+          }
+        });
+        
+        // Subtract expenses for this month (only unpaid ones)
+        monthBillDates.forEach(bill => {
+          if (!bill.isPaid && bill.date >= trackingStartDate) {
+            carryForwardBalance -= bill.amount;
+          }
+        });
+        
+        currentMonth.setMonth(currentMonth.getMonth() + 1);
+      }
+      
+      monthStartingBalance = carryForwardBalance;
+    }
     
     // Combine all events
     const allEvents: CalendarEvent[] = [
@@ -218,7 +260,7 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
 
     // Calculate running balance and identify reserve needs
     const analysis: DayAnalysis[] = [];
-    let runningBalance = startingBalance;
+    let runningBalance = monthStartingBalance;
     
     const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
     const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
@@ -331,6 +373,7 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
                   value={startingBalance}
                   onChange={(e) => updateStartingBalance(Number(e.target.value))}
                   className="w-32 pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  title={`Starting balance from ${budgetData.trackingStartDate || 'tracking start date'}`}
                 />
               </div>
             </div>
@@ -389,7 +432,12 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-2">
               <span className="h-5 w-5 text-slate-600 font-bold flex items-center justify-center">£</span>
-              <span className="font-medium text-slate-800">Month End Balance</span>
+              <span className="font-medium text-slate-800">
+                {selectedMonth.getMonth() === new Date().getMonth() && selectedMonth.getFullYear() === new Date().getFullYear() 
+                  ? 'Current Balance' 
+                  : 'Month End Balance'
+                }
+              </span>
             </div>
             <div className="text-sm text-slate-700">
               {formatCurrency(calendarAnalysis[calendarAnalysis.length - 1]?.balance || startingBalance)}
