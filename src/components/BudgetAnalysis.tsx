@@ -7,7 +7,7 @@ interface BudgetAnalysisProps {
 
 const BudgetAnalysis: React.FC<BudgetAnalysisProps> = ({ budgetData }) => {
   const calculateMonthlyIncome = () => {
-    const biweeklyNet = budgetData.income.biweeklyGross * (1 - budgetData.income.taxRate);
+    const biweeklyNet = budgetData.income.biweeklyNet || 0;
     return (biweeklyNet * 26) / 12;
   };
 

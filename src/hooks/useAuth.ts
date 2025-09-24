@@ -59,11 +59,7 @@ export const useAuth = () => {
       setCurrentUser(sessionUser);
       localStorage.setItem('current_user', JSON.stringify(sessionUser));
     }
-  };
-
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('current_user');
+    return password.length >= 6; // Simplified for easier setup
   };
 
   const updateProfile = (updates: {
@@ -93,8 +89,9 @@ export const useAuth = () => {
         throw new Error('Current password is incorrect');
       }
       
-      if (!validatePassword(updates.newPassword)) {
-        throw new Error('New password does not meet security requirements');
+      // Simplified password validation for profile updates
+      if (updates.newPassword.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
       }
     }
 
@@ -149,10 +146,16 @@ export const useAuth = () => {
     return null;
   };
 
+  const logout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('current_user');
+  };
+
   return {
     currentUser,
     isLoading,
     login,
+    logout,
     logout,
     updateProfile,
     getPartnerUser

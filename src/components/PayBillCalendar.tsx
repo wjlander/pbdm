@@ -132,7 +132,7 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData }) => {
   const generateCalendarAnalysis = () => {
     const payDates = generatePayDates(selectedMonth);
     const billDates = generateBillDates(selectedMonth);
-    const fortnightlyNet = budgetData.income.biweeklyGross * (1 - budgetData.income.taxRate);
+    const fortnightlyNet = budgetData.income.biweeklyNet || 0;
     
     // Combine all events
     const allEvents: CalendarEvent[] = [

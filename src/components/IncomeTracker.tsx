@@ -7,16 +7,14 @@ interface IncomeTrackerProps {
 }
 
 const IncomeTracker: React.FC<IncomeTrackerProps> = ({ budgetData, setBudgetData }) => {
-  const [biweeklyGross, setBiweeklyGross] = useState(budgetData.income.biweeklyGross || 0);
-  const [taxRate, setTaxRate] = useState(budgetData.income.taxRate || 0.25);
+  const [biweeklyNet, setBiweeklyNet] = useState(budgetData.income.biweeklyNet || 0);
   const [nextPayDate, setNextPayDate] = useState(budgetData.income.nextPayDate || new Date().toISOString().split('T')[0]);
 
   const updateIncome = () => {
     setBudgetData({
       ...budgetData,
       income: {
-        biweeklyGross,
-        taxRate,
+        biweeklyNet,
         nextPayDate
       }
     });
@@ -51,8 +49,6 @@ const IncomeTracker: React.FC<IncomeTrackerProps> = ({ budgetData, setBudgetData
     });
   };
 
-  const biweeklyNet = biweeklyGross * (1 - taxRate);
-  const annualGross = biweeklyGross * 26;
   const annualNet = biweeklyNet * 26;
   const monthlyNet = annualNet / 12;
 
@@ -71,36 +67,20 @@ const IncomeTracker: React.FC<IncomeTrackerProps> = ({ budgetData, setBudgetData
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              Biweekly Gross Salary
+              Biweekly Net Pay
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 font-medium">£</span>
               <input
                 type="number"
-                value={biweeklyGross}
-                onChange={(e) => setBiweeklyGross(Number(e.target.value))}
+                value={biweeklyNet}
+                onChange={(e) => setBiweeklyNet(Number(e.target.value))}
                 onBlur={updateIncome}
                 className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="0.00"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Tax Rate (%)
-            </label>
-            <input
-              type="number"
-              value={taxRate * 100}
-              onChange={(e) => setTaxRate(Number(e.target.value) / 100)}
-              onBlur={updateIncome}
-              min="0"
-              max="100"
-              step="0.1"
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="25.0"
-            />
+            <p className="text-xs text-slate-500 mt-1">Your take-home pay after taxes and deductions</p>
           </div>
 
           <div>
@@ -127,13 +107,6 @@ const IncomeTracker: React.FC<IncomeTrackerProps> = ({ budgetData, setBudgetData
           
           <div className="space-y-4">
             <div className="flex justify-between items-center py-3 border-b border-slate-100">
-              <span className="text-slate-600">Biweekly Gross</span>
-              <span className="text-lg font-semibold text-slate-800">
-                {formatCurrency(biweeklyGross)}
-              </span>
-            </div>
-            
-            <div className="flex justify-between items-center py-3 border-b border-slate-100">
               <span className="text-slate-600">Biweekly Net</span>
               <span className="text-lg font-semibold text-green-600">
                 {formatCurrency(biweeklyNet)}
@@ -148,13 +121,6 @@ const IncomeTracker: React.FC<IncomeTrackerProps> = ({ budgetData, setBudgetData
             </div>
             
             <div className="flex justify-between items-center py-3 border-b border-slate-100">
-              <span className="text-slate-600">Annual Gross</span>
-              <span className="text-lg font-semibold text-slate-800">
-                {formatCurrency(annualGross)}
-              </span>
-            </div>
-            
-            <div className="flex justify-between items-center py-3">
               <span className="text-slate-600">Annual Net</span>
               <span className="text-xl font-bold text-green-600">
                 {formatCurrency(annualNet)}
