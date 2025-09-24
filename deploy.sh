@@ -120,14 +120,85 @@ deploy_app() {
         fi
     fi
     
+    # Verify we have the necessary files
+    if [ ! -f "package.json" ]; then
+        error "package.json not found after copying files"
+    fi
+    
+    if [ ! -f "vite.config.ts" ] && [ ! -f "vite.config.js" ]; then
+        log "Creating basic vite.config.ts..."
+        cat > vite.config.ts << 'EOF'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'terser'
+  }
+});
+EOF
+    fi
+    
+    # Ensure we have all required config files
+    if [ ! -f "tsconfig.json" ]; then
+        log "Creating basic tsconfig.json..."
+        cat > tsconfig.json << 'EOF'
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+EOF
+    fi
+    
+    if [ ! -f "tsconfig.node.json" ]; then
+        log "Creating tsconfig.node.json..."
+        cat > tsconfig.node.json << 'EOF'
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+EOF
+    fi
+    
     # Install dependencies
     if [ -f "package.json" ]; then
         log "Installing Node.js dependencies..."
-        npm install --production
+        # Install all dependencies first (including dev dependencies for build)
+        npm install
         
         # Build the application
         log "Building application..."
         npm run build
+        
+        # Clean up dev dependencies after build
+        log "Cleaning up development dependencies..."
+        npm prune --production
         
         # Verify build was successful
         if [ ! -d "dist" ] || [ -z "$(ls -A dist 2>/dev/null)" ]; then
