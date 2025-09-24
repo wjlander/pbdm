@@ -19,6 +19,7 @@ import QuickActions from './components/QuickActions';
 import LoadingSpinner from './components/LoadingSpinner';
 import CloudBackup from './components/CloudBackup';
 import SecurityAudit from './components/SecurityAudit';
+import DatabaseStatus from './components/DatabaseStatus';
 import useLocalStorage from './hooks/useLocalStorage';
 import { useAuth } from './hooks/useAuth';
 
@@ -147,7 +148,12 @@ function App() {
       case 'security':
         return <SecurityAudit currentUser={currentUser} />;
       case 'profile':
-        return <UserProfile currentUser={currentUser} onLogout={logout} onUpdateProfile={handleProfileUpdate} />;
+        return (
+          <div className="space-y-6">
+            <DatabaseStatus user={currentUser} />
+            <UserProfile currentUser={currentUser} onLogout={logout} onUpdateProfile={handleProfileUpdate} />
+          </div>
+        );
       default:
         return <Dashboard budgetData={budgetData} setBudgetData={handleDataUpdate} />;
     }
