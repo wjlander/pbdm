@@ -438,7 +438,11 @@ const PayBillCalendar: React.FC<PayBillCalendarProps> = ({ budgetData, setBudget
               {day.needsReserve && (
                 <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-800">
-                    <strong>Cash Flow Alert:</strong> You should reserve {formatCurrency(day.reserveAmount)} from today's income to cover upcoming expenses before your next payday.
+                    <strong>Reserve Recommendation:</strong> From today's pay of {formatCurrency(day.events.filter(e => e.isIncoming).reduce((sum, e) => sum + e.amount, 0))}, 
+                    set aside {formatCurrency(day.reserveAmount)} to cover {formatCurrency(day.events.filter(e => e.isIncoming).length > 0 ? 
+                      allEvents.filter(event => !event.isIncoming && event.date > day.date && 
+                        event.date <= (payDates.find(payDate => payDate > day.date) || new Date())).reduce((sum, event) => sum + event.amount, 0) : 0)} 
+                    in upcoming bills before your next payday.
                   </p>
                 </div>
               )}
