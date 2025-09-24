@@ -49,7 +49,7 @@ export const useSupabaseBudgetData = (user: User | null) => {
 
       const { data, error } = await supabase
         .from('budget_data')
-        .select('data')
+        .select('*')
         .eq('user_id', user.id)
         .single()
 

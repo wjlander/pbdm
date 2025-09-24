@@ -34,9 +34,9 @@ function App() {
   
   // Check if user needs onboarding (no budget data yet)
   const needsOnboarding = user && budgetData && 
-    budgetData.income.biweeklyNet === 0 && 
-    budgetData.emergencyFund.target === 0 &&
-    budgetData.expenses.fixed.length === 0;
+    (budgetData.income?.biweeklyNet === 0 || !budgetData.income?.biweeklyNet) && 
+    (budgetData.emergencyFund?.target === 0 || !budgetData.emergencyFund?.target) &&
+    (!budgetData.expenses?.fixed || budgetData.expenses.fixed.length === 0);
   
   const [showOnboarding, setShowOnboarding] = useState(false);
 
