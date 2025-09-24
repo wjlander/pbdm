@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, TrendingUp, CreditCard, PieChart, Calculator, Target, Calendar, Menu, X, Car, Heart, Camera, Bell, User } from 'lucide-react';
+import { DollarSign, TrendingUp, CreditCard, PieChart, Calculator, Target, Calendar, Menu, X, Car, Heart, Camera, Bell, User, CheckCircle } from 'lucide-react';
 import LoginForm from './components/LoginForm';
 import UserProfile from './components/UserProfile';
 import IncomeTracker from './components/IncomeTracker';
